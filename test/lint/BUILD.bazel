@@ -10,6 +10,8 @@ ruff_test(
         "//test/lietorch:lietorch_cases",
         "//test/lietorch:lietorch_cpu_test",
         "//test/lietorch:lietorch_cuda_test",
+        "//test/torch_scatter:torch_scatter_test",
+        "//third_party/torch_scatter",
         "//tools:cuda_check",
     ],
 )

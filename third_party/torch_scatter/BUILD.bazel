@@ -1,0 +1,19 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_library.bzl", "py_library")
+
+# `import torch_scatter`: drop-in for the functions DROID-SLAM uses from
+# https://github.com/rusty1s/pytorch_scatter (see UPSTREAM.md).
+py_library(
+    name = "torch_scatter",
+    srcs = ["torch_scatter/__init__.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [requirement("torch")],
+)
+
+# Make the files available to doxygen
+filegroup(
+    name = "sources",
+    srcs = ["torch_scatter/__init__.py"],
+    visibility = ["//visibility:public"],
+)

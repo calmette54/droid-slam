@@ -1,0 +1,15 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_test(
+    name = "torch_scatter_test",
+    size = "small",
+    srcs = ["torch_scatter_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//third_party/torch_scatter",
+        requirement("numpy"),
+        requirement("pytest"),
+        requirement("torch"),
+    ],
+)
