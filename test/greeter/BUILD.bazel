@@ -1,0 +1,13 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_test(
+    name = "greeter_test",
+    size = "small",
+    srcs = ["greeter_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//lib/greeter",
+        requirement("pytest"),
+    ],
+)

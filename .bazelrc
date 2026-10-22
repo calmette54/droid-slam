@@ -1,0 +1,115 @@
+# Configure credential-helper to download a prebuilt binary
+common --@tweag-credential-helper//bzl/config:helper_build_mode="auto"
+
+# rules_oci: disable builtin credential handling
+common --repo_env=OCI_GET_TOKEN_ALLOW_FAIL=1
+
+# Configure the credential-helper to be used for your domains
+# GitHub
+common --credential_helper=github.com=%workspace%/tools/credential-helper
+common --credential_helper=raw.githubusercontent.com=%workspace%/tools/credential-helper
+# Docker
+common --credential_helper=index.docker.io=%workspace%/tools/credential-helper
+
+# Build for aarch64 or x86_64
+build:aarch64 --platforms=@toolchains_llvm//platforms:linux-aarch64
+build:x86_64 --platforms=@toolchains_llvm//platforms:linux-x86_64
+
+# This tells Bazel how to interact with the version control system
+build --stamp --workspace_status_command=./tools/workspace_status.sh
+
+# Alias for the build setting
+build --flag_alias=revision_mode=//:revision_mode
+build --flag_alias=release_version=//:release_version
+build --flag_alias=commit_sha=//:commit_sha
+
+###############################################################################
+# Remote Bazel Execution (buildbuddy)
+#
+# - With API key (in separate auth file)
+# - Cache enabled (full)
+# - Remote execution enabled
+###############################################################################
+# Tag CI invocations accordingly to let BuildBuddy know that workflow test
+# should be viewable in the test grid
+build:ci --build_metadata=ROLE=CI
+
+# Enable buildbuddy to show results and be the build backend
+build:ci --bes_results_url=https://app.buildbuddy.io/invocation/
+build:ci --bes_backend=grpcs://remote.buildbuddy.io
+# Enable remote execution so actions are performed on the remote systems.
+build:ci --remote_executor=grpcs://remote.buildbuddy.io
+# Enable remote cache
+build:ci --remote_cache=grpcs://remote.buildbuddy.io
+
+# Depending on how many machines are in the remote execution instance, setting
+# this higher can make builds faster by allowing more jobs to run in parallel.
+# Setting it too high can result in jobs that timeout, however, while waiting
+# for a remote machine to execute them.
+build:ci --jobs=50
+
+# Set several flags related to specifying the platform, toolchain
+# These flags should only be used as is for the rbe-ubuntu16-04 container
+# and need to be adapted to work with other toolchain containers.
+# build:remote --crosstool_top=@rbe_default//cc:toolchain
+build:ci --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+# Platform flags:
+# The toolchain container used for execution is defined in the target indicated
+# by "extra_execution_platforms", "host_platform" and "platforms".
+# More about platforms: https://docs.bazel.build/versions/master/platforms.html
+# build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
+# build:remote --extra_execution_platforms=@rbe_default//config:platform
+# build:remote --host_platform=@rbe_default//config:platform
+build:ci --host_platform=@buildbuddy_toolchain//:platform
+# build:remote --platforms=@rbe_default//config:platform
+
+# Starting with Bazel 0.27.0 strategies do not need to be explicitly
+# defined. See https://github.com/bazelbuild/bazel/issues/7480
+build:ci --define=EXECUTOR=remote
+
+# Enforce stricter environment rules, which eliminates some non-hermetic
+# behavior and therefore improves both the remote cache hit rate and the
+# correctness and repeatability of the build.
+build:ci --incompatible_strict_action_env=true
+
+# Set a higher timeout value, just in case.
+build:ci --remote_timeout=10m
+
+## FIXME: fully migrate to bzlmod
+common --enable_workspace
+
+###############################################################################
+# Code coverage
+#
+#   bazelisk coverage //...
+#   genhtml bazel-out/_coverage/_coverage_report.dat -o coverage-html
+###############################################################################
+# The LLVM toolchain instruments with -fprofile-instr-generate, so use
+# LLVM's native coverage instead of gcov.
+coverage --experimental_use_llvm_covmap
+coverage --experimental_generate_llvm_lcov
+# Only build tests: instrumented cross-compiled targets (e.g. the aarch64
+# image) cannot link, because the x86_64 LLVM release has no aarch64
+# libclang_rt.profile.a.
+coverage --build_tests_only
+# Merge all tests into bazel-out/_coverage/_coverage_report.dat.
+coverage --combined_report=lcov
+# By default only the packages of the requested targets are instrumented
+# (e.g. //test/... would leave //lib out). Instrument the whole workspace
+# except tests and benchmarks.
+coverage --instrumentation_filter=^//,-^//test[/:],-^//benchmark[/:]
+# NOTE: --experimental_fetch_all_coverage_outputs does not work with
+# toolchains_llvm (dangling "gcov" symlink in the _coverage tree artifact).
+
+# With RBE, merge the report locally and download the coverage outputs.
+coverage:ci --strategy=CoverageReport=local
+coverage:ci --remote_download_outputs=all
+
+# Python: every package ships its own __init__.py (no implicit ones).
+common --incompatible_default_to_explicit_init_py
+
+# Shell launcher that runs the hermetic interpreter from the runfiles, so the
+# release tarball and the image need no python3 on the PATH. The venv is
+# created at run time: pkg_tar cannot package its declared symlinks.
+common --@rules_python//python/config_settings:bootstrap_impl=script
+common --@rules_python//python/config_settings:venvs_use_declare_symlink=no

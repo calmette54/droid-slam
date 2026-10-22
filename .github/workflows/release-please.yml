@@ -1,0 +1,152 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Tags and PRs created with GITHUB_TOKEN do not trigger other
+          # workflows. To get CI on release PRs, add a personal access token
+          # (or GitHub App token) as the `RELEASE_PLEASE_TOKEN` secret.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  release-artifacts:
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    needs: release-please
+    permissions:
+      contents: write # upload release assets, push to gh-pages
+      packages: write # push the image to ghcr.io
+    steps:
+      - name: Checkout
+        # Checkout this repo's code
+        uses: actions/checkout@v4
+
+      - name: Install Bazelisk
+        # Install bazel
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          # Avoid downloading Bazel every time.
+          bazelisk-cache: true
+          # Store build cache per workflow.
+          disk-cache: ${{ github.workflow }}
+          # Share repository cache between workflows.
+          repository-cache: true
+
+      - name: Read the release version
+        id: version
+        run: echo "SEMANTIC_VERSION=$(jq -r '.["."]' .release-please-manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate Bazel
+        run: |
+          # Intall the credential-helper
+          CREDENTIAL_HELPER_PATH=$(bazelisk run @tweag-credential-helper//installer)
+          # Make the credential-helper executable
+          chmod +x "$CREDENTIAL_HELPER_PATH"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push OCI Image
+        # Build and push OCI image to Image Registry
+        id: build-push-oci-image
+        run: |
+          # Build and push the oci images
+          # NOTE: this will generate tarballs as intermediate steps
+          SEMANTIC_VERSION="${{ steps.version.outputs.SEMANTIC_VERSION }}"
+          bazelisk run standalone:push_image --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}"
+          # Save the image registry url where the oci image is stored
+          echo ""
+          echo "**************************************"
+          echo "Saving the REGISTRY_URL"
+          REGISTRY_URL="$(bazelisk cquery standalone:repositories --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --output files 2>/dev/null | xargs -r cat)"
+          echo "REGISTRY_URL: ${REGISTRY_URL}"
+          echo "**************************************"
+          # Save the tag of the oci image
+          echo ""
+          echo "**************************************"
+          echo "Saving the IMAGE_TAG"
+          IMAGE_TAG="$(bazelisk cquery standalone:release-tags --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --output files 2>/dev/null | xargs -r cat)"
+          echo "IMAGE_TAG: ${IMAGE_TAG}"
+          echo "**************************************"
+          {
+            # Make the registry_url and the image tag available as an output var
+            echo "REGISTRY_URL=${REGISTRY_URL}"
+            echo "IMAGE_TAG=${IMAGE_TAG}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build tarball for x86_64 (binaries)
+        id: build-tarballs-x86_64
+        env:
+          SEMANTIC_VERSION: ${{ steps.version.outputs.SEMANTIC_VERSION }}
+        run: |
+          TARGET_ARCH="x86_64"
+          bazelisk build standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}"
+          TARBALL_PATH="$(bazelisk cquery standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}" --output files)"
+          echo "TARBALL_PATH: ${TARBALL_PATH}"
+          # Make the tarball path available as an output variable from this step
+          echo "TARBALL_PATH=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Build tarball for aarch64 (binaries)
+        id: build-tarballs-aarch64
+        env:
+          SEMANTIC_VERSION: ${{ steps.version.outputs.SEMANTIC_VERSION }}
+        run: |
+          TARGET_ARCH="aarch64"
+          bazelisk build standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}"
+          TARBALL_PATH="$(bazelisk cquery standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}" --output files)"
+          echo "TARBALL_PATH: ${TARBALL_PATH}"
+          # Make the tarball path available as an output variable from this step
+          echo "TARBALL_PATH=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload tarballs (binaries) to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            ${{ steps.build-tarballs-x86_64.outputs.TARBALL_PATH }}
+            ${{ steps.build-tarballs-aarch64.outputs.TARBALL_PATH }}
+          fail_on_unmatched_files: true
+          append_body: true
+          body: |
+            ## Docker image
+
+            Pull with:
+
+            ```
+            docker pull ${{ steps.build-push-oci-image.outputs.REGISTRY_URL }}:${{ steps.build-push-oci-image.outputs.IMAGE_TAG }}
+            ```
+
+      - name: Build Documentation
+        # Always use bazelisk rather than bazel to guarantee that the
+        # pinned version is used (.bazeliskrc selects the Aspect CLI, which
+        # in turn runs the Bazel version from .bazelversion).
+        run: bazelisk build //documentation:docs
+
+      - name: Publish Documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: bazel-bin/documentation/html # The folder the action should deploy.

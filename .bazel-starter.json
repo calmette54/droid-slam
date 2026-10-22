@@ -1,0 +1,10 @@
+{
+  "template": "https://github.com/calmette54/BazelStarterTemplate",
+  "ref": "v3.1.0-1-ga53b253",
+  "commit": "a53b253fab37659a409df6d03506e6324845a9df",
+  "lang": "python",
+  "components": [
+    "container",
+    "docs"
+  ]
+}

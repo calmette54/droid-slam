@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledMcpjsonServers": ["context7", "grep"],
+  "permissions": {
+    "allow": [
+      "Bash(bazelisk build:*)",
+      "Bash(bazelisk test:*)",
+      "Bash(bazelisk coverage:*)",
+      "Bash(bazelisk lint:*)",
+      "Bash(bazelisk query:*)",
+      "Bash(bazelisk cquery:*)",
+      "Bash(bazelisk aquery:*)",
+      "Bash(bazelisk info:*)",
+      "Bash(bazelisk mod:*)",
+      "Bash(bazelisk run //:format)",
+      "mcp__context7",
+      "mcp__grep"
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@testcontainers_deps//:requirements.bzl", "requirement")
+
+# This rule generates two targets:
+#
+# `bazel run requirements.update` will regenerate the requirements_txt file
+#
+# `bazel test requirements_test` will test that the requirements_txt file is up to date
+#
+compile_pip_requirements(
+    name = "requirements",
+    src = "requirements.in",
+    requirements_txt = "requirements_lock_3_12.txt",
+)
+
+# Runs the //standalone image in a container and checks its output.
+#
+# Needs a Docker-compatible daemon. The test inherits DOCKER_HOST and the
+# TESTCONTAINERS_* variables, e.g. for rootless Podman:
+#
+#   systemctl --user start podman.socket
+#   export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+#   export TESTCONTAINERS_RYUK_DISABLED=true
+#   bazelisk test //integration:standalone_image_test
+py_test(
+    name = "standalone_image_test",
+    size = "medium",
+    srcs = ["standalone_image_test.py"],
+    data = ["//standalone:host_image.tar"],
+    env = {"IMAGE_TARBALL": "$(rlocationpath //standalone:host_image.tar)"},
+    env_inherit = [
+        "DOCKER_HOST",
+        "HOME",
+        "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TESTCONTAINERS_RYUK_DISABLED",
+        "XDG_RUNTIME_DIR",
+    ],
+    python_version = "3.12",
+    # "local": talk to the host's container daemon, outside the sandbox and
+    # never on a remote executor.
+    tags = [
+        "local",
+        "requires-docker",
+    ],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "@rules_python//python/runfiles",
+        requirement("docker"),
+        requirement("testcontainers"),
+    ],
+)

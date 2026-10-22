@@ -1,0 +1,12 @@
+load("//bzl/lint:linters.bzl", "ruff_test")
+
+# Fails when ruff reports anything (see //:.ruff.toml).
+ruff_test(
+    name = "ruff_test",
+    srcs = [
+        "//integration:standalone_image_test",
+        "//lib/greeter",
+        "//standalone:hello-world",
+        "//test/greeter:greeter_test",
+    ],
+)

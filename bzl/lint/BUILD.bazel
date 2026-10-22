@@ -1,0 +1,15 @@
+"""Linter binaries.
+
+This is in its own package so that builds which don't lint never fetch the
+linter tools.
+"""
+
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
+package(default_visibility = ["//:__subpackages__"])
+
+native_binary(
+    name = "clang_tidy",
+    src = "@llvm_toolchain//:clang-tidy",
+    out = "clang_tidy",
+)

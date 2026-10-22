@@ -1,0 +1,15 @@
+actions:
+  - name: "Test all targets"
+    container_image: "ubuntu-22.04"
+    timeout: "10m"
+    triggers:
+      push:
+        branches:
+          - "main"
+      pull_request:
+        branches:
+          - "*"
+    steps:
+      # Tests tagged requires-docker need a container daemon on the runner;
+      # drop the filter once the workflow image provides one.
+      - run: "bazel test --config=ci //test/... //integration/... --test_tag_filters=-requires-docker"

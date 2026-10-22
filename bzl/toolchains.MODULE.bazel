@@ -1,0 +1,93 @@
+# Hermetic LLVM toolchain with Debian sysroots for x86_64 and aarch64.
+#
+# Included by the root MODULE.bazel and, through a symlink, by every module
+# under examples/, so they all build with the same compiler and C++ standard.
+# Everything here is a dev dependency: it applies only when the including
+# module is the root module.
+
+# https://github.com/bazel-contrib/toolchains_llvm
+bazel_dep(name = "toolchains_llvm", version = "1.4.0", dev_dependency = True)
+
+# https://github.com/bazelbuild/bazel/blob/master/tools/build_defs/repo/http.bzl
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+#--------------------- LLVM Toolchain --------------
+# https://steven.casagrande.io/posts/2024/sysroot-generation-toolchains-llvm/
+# https://github.com/bazelbuild/rules_rust/blob/main/examples/cross_compile/MODULE.bazel
+
+SYSROOT_BUILD_CONTENT = """
+filegroup(
+    name = "sysroot",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+"""
+
+# INTEL/AMD64 Sysroot. LastModified: 2024-04-26T19:15
+# https://commondatastorage.googleapis.com/chrome-linux-sysroot/
+http_archive(
+    name = "sysroot_linux_x64",
+    build_file_content = SYSROOT_BUILD_CONTENT,
+    sha256 = "5df5be9357b425cdd70d92d4697d07e7d55d7a923f037c22dc80a78e85842d2c",
+    urls = ["https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain/4f611ec025be98214164d4bf9fbe8843f58533f7/debian_bullseye_amd64_sysroot.tar.xz"],
+)
+
+# ARM 64 Sysroot. LastModified: 2024-04-26T18:33
+# https://commondatastorage.googleapis.com/chrome-linux-sysroot/
+http_archive(
+    name = "sysroot_linux_aarch64",
+    build_file_content = SYSROOT_BUILD_CONTENT,
+    sha256 = "d303cf3faf7804c9dd24c9b6b167d0345d41d7fe4bfb7d34add3ab342f6a236c",
+    urls = ["https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain/906cc7c6bf47d4bd969a3221fc0602c6b3153caa/debian_bullseye_arm64_sysroot.tar.xz"],
+)
+
+# Configure and register the toolchain.
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+
+llvm.toolchain(
+    name = "llvm_toolchain",
+    llvm_versions = {
+        "linux-x86_64": "19.1.6",
+        "linux-aarch64": "19.1.6",
+    },
+    sha256 = {
+        "linux-x86_64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
+        "linux-aarch64": "f6fd8cf8bb12f507c4a55609ef6a435b3c59bc658008b712b80ec1cdc1ee9325",
+    },
+    strip_prefix = {
+        "linux-x86_64": "LLVM-19.1.6-Linux-X64",
+        "linux-aarch64": "clang+llvm-19.1.6-aarch64-linux-gnu",
+    },
+    urls = {
+        "linux-x86_64": [
+            "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.6/LLVM-19.1.6-Linux-X64.tar.xz",
+        ],
+        "linux-aarch64": [
+            "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.6/clang+llvm-19.1.6-aarch64-linux-gnu.tar.xz",
+        ],
+    },
+    stdlib = {
+        "linux-x86_64": "stdc++",
+        "linux-aarch64": "stdc++",
+    },
+    # Keyed by target OS-arch pair; "" applies to all targets.
+    cxx_standard = {
+        "": "c++23",
+    },
+)
+llvm.sysroot(
+    name = "llvm_toolchain",
+    label = "@sysroot_linux_x64//:sysroot",
+    targets = ["linux-x86_64"],
+)
+llvm.sysroot(
+    name = "llvm_toolchain",
+    label = "@sysroot_linux_aarch64//:sysroot",
+    targets = ["linux-aarch64"],
+)
+use_repo(llvm, "llvm_toolchain")
+
+register_toolchains(
+    "@llvm_toolchain//:all",
+    dev_dependency = True,
+)

@@ -1,0 +1,23 @@
+# C++ stuff
+compile_commands.json
+.cache
+
+# Bazel
+/bazel-*
+external
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+# Claude Code: personal settings (shared settings live in .claude/settings.json)
+.claude/settings.local.json
+
+# Python
+__pycache__/

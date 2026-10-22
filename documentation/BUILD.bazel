@@ -1,0 +1,46 @@
+load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@doxygen//:doxygen.bzl", "doxygen")
+load("//:bzl/variables.bzl", "PROJECT_DESCRIPTION", "PROJECT_NAME", "REPOSITORY_URL")
+
+doxygen(
+    name = "docs",
+    srcs = [
+        "README.md",
+        ":header",
+        "//lib/greeter:sources",
+        "//standalone:sources",
+    ] + glob(["_static/*"]),
+    aliases = [
+        "license=@par License:^^",
+        "constructor{1}=Construct a new \\1 object.^^",
+    ],
+    doxyfile_template = ":doxyfile",
+    # Only built when requested explicitly (e.g. by the release workflow).
+    tags = ["manual"],
+)
+
+# Point the "View source on GitHub" corner at this repository.
+expand_template(
+    name = "header",
+    out = "header.html",
+    substitutions = {"{{REPOSITORY_URL}}": REPOSITORY_URL},
+    template = "_static/header.html",
+)
+
+expand_template(
+    name = "doxyfile",
+    out = "doxyfile",
+    data = [":header"],
+    stamp_substitutions = {
+        "{{PROJECT_NUMBER}}": "{{STABLE_SEMANTIC_VERSION}}",
+    },
+    substitutions = {
+        "{{PROJECT_NAME}}": PROJECT_NAME,
+        "{{PROJECT_NUMBER}}": "0.0.0",
+        "{{PROJECT_BRIEF}}": PROJECT_DESCRIPTION,
+        "{{PROJECT_LOGO}}": "documentation/_static/logo.svg",
+        "{{PROJECT_ICON}}": "documentation/_static/logo.svg",
+        "{{HTML_HEADER}}": "$(execpath :header)",
+    },
+    template = "Doxyfile.template",
+)

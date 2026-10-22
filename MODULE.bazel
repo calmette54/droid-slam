@@ -1,0 +1,109 @@
+module(
+    name = "droid-slam",
+    version = "0.0.0",
+)
+
+#------------- Application dependencies -------------
+bazel_dep(name = "protobuf", version = "31.0-rc2", repo_name = "com_google_protobuf")
+bazel_dep(name = "bazel_features", version = "1.29.0", repo_name = "proto_bazel_features")
+
+version = use_extension("@proto_bazel_features//private:extensions.bzl", "version_extension")
+use_repo(version, "bazel_features_globals", "bazel_features_version")
+
+#------------- Testing dependencies -----------------
+
+#------------- Documentation dependencies -----------
+# Starlark implementation of Doxygen rules in Bazel to automatically document the codebase
+# https://github.com/TendTo/rules_doxygen
+bazel_dep(name = "rules_doxygen", version = "2.1.0", dev_dependency = True)
+
+doxygen_extension = use_extension("@rules_doxygen//:extensions.bzl", "doxygen_extension")
+
+# Use the local doxygen installation on x86
+doxygen_extension.configuration(
+    platform = "linux",
+    sha256 = "dcfc9aa4cc05aef1f0407817612ad9e9201d9bf2ce67cecf95a024bba7d39747",
+    version = "1.10.0",
+)
+use_repo(doxygen_extension, "doxygen")
+
+#################################################################################
+# Utilities
+#################################################################################
+# https://github.com/bazelbuild/bazel-skylib
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+# Formatting and Linting
+# https://github.com/aspect-build/rules_lint
+bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
+
+###############################################################################
+# Bazel Dependencies # https://registry.bazel.build/
+###############################################################################
+# https://github.com/bazelbuild/rules_cc
+bazel_dep(name = "rules_cc", version = "0.1.1")
+# https://github.com/bazelbuild/platforms/release
+bazel_dep(name = "platforms", version = "0.0.11")
+
+#--------------------- LLVM Toolchain --------------
+include("//:bzl/toolchains.MODULE.bazel")
+
+#--------------------- Python Toolchain --------------
+# https://rules-python.readthedocs.io/en/latest/toolchains.html
+bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
+
+python = use_extension(
+    "@rules_python//python/extensions:python.bzl",
+    "python",
+    dev_dependency = True
+)
+
+python.toolchain(python_version = "3.12", is_default=True)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "testcontainers_deps",
+    python_version = "3.12",
+    requirements_lock = "//integration:requirements_lock_3_12.txt",
+)
+use_repo(pip, "testcontainers_deps")
+
+###############################################################################
+# Package your application (release tarballs, stamped files, credentials)
+###############################################################################
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
+bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
+
+###############################################################################
+# Containerize your application
+#
+# TIP: For testing, https://registry.bazel.build/modules/container_structure_test
+###############################################################################
+bazel_dep(name = "rules_oci", version = "2.2.6")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+
+# Pull needed base image
+oci.pull(
+    name = "docker_lib_ubuntu",
+    image = "ubuntu",
+    platforms = [
+        "linux/arm64/v8",
+        "linux/amd64",
+    ],
+    digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
+)
+
+# Expose the base image
+use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_ubuntu_linux_arm64_v8")
+
+#--------------------- Python dependencies --------------
+# Direct dependencies in requirements.in; update the lock with
+# `bazelisk run //:requirements.update`.
+pip_project = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip_project.parse(
+    hub_name = "pypi",
+    python_version = "3.12",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip_project, "pypi")
