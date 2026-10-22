@@ -1,0 +1,13 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
+# `bazelisk run //tools:cuda_check`: PyTorch version, CUDA version and GPUs.
+py_binary(
+    name = "cuda_check",
+    srcs = ["cuda_check.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("numpy"),
+        requirement("torch"),
+    ],
+)

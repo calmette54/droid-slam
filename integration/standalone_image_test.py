@@ -8,7 +8,7 @@ from python.runfiles import Runfiles
 from testcontainers.core.container import DockerContainer
 
 # Must match repo_tags of //standalone:load_host_image.
-IMAGE = "hello-world:integration-test"
+IMAGE = "droid-slam:integration-test"
 
 
 def setUpModule():

@@ -42,6 +42,8 @@ exports_files(
     [
         ".clang-tidy",
         ".ruff.toml",
+        "LICENSE",
+        "requirements_lock.txt",
     ],
     visibility = ["//visibility:public"],
 )
@@ -49,14 +51,4 @@ exports_files(
 alias(
     name = "format",
     actual = "//bzl/format",
-)
-
-load("@rules_python//python:pip.bzl", "compile_pip_requirements")
-
-# `bazelisk run //:requirements.update` regenerates requirements_lock.txt;
-# //:requirements_test fails when it is out of date.
-compile_pip_requirements(
-    name = "requirements",
-    src = "requirements.in",
-    requirements_txt = "requirements_lock.txt",
 )

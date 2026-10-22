@@ -23,7 +23,7 @@ naming_convention(
 # Packaging the binary into tar, which is needed by oci_image rule
 pkg_tar(
     name = "tar",
-    srcs = [":hello-world"],
+    srcs = ["//tools:cuda_check"],
     # The interpreter and the libraries are in the runfiles.
     include_runfiles = True,
     package_file_name = select({
@@ -60,7 +60,7 @@ oci_image(
     base = "@docker_lib_ubuntu",
     tars = [":tar"],
     labels = ":image-annotations",
-    entrypoint = ["/hello-world"],
+    entrypoint = ["/cuda_check"],
 )
 
 multi_arch(
@@ -150,7 +150,7 @@ oci_load(
 oci_load(
     name = "load_host_image",
     image = ":image",
-    repo_tags = ["hello-world:integration-test"],
+    repo_tags = ["droid-slam:integration-test"],
 )
 
 filegroup(
@@ -159,18 +159,3 @@ filegroup(
     output_group = "tarball",
 )
 
-load("@rules_python//python:py_binary.bzl", "py_binary")
-
-# Make the files available to doxygen
-filegroup(
-    name = "sources",
-    srcs = glob(["*.py"]),
-    visibility = ["//visibility:public"],
-)
-
-py_binary(
-    name = "hello-world",
-    srcs = ["main.py"],
-    main = "main.py",
-    deps = ["//lib/greeter"],
-)

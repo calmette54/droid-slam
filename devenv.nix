@@ -25,6 +25,7 @@ in {
     # Packages needed by the project
     pkgs.git
     pkgs.bazelisk
+    pkgs.uv
 
     # Utilities
     pkgs.commitizen
@@ -47,6 +48,21 @@ in {
     CREDENTIAL_HELPER_PATH=$(bazelisk run @tweag-credential-helper//installer)
     # Make the credential-helper executable
     chmod +x "$CREDENTIAL_HELPER_PATH"
+  '';
+
+  # Regenerate requirements_lock.txt from requirements.in. open3d 0.19 only
+  # ships manylinux_2_31 wheels, hence the platform.
+  scripts.lock-requirements.exec = ''
+    set -euo pipefail
+    cd "$DEVENV_ROOT"
+    uv pip compile requirements.in \
+      --python-version 3.12 \
+      --python-platform x86_64-manylinux_2_31 \
+      --generate-hashes \
+      --index-url https://pypi.org/simple \
+      --extra-index-url https://download.pytorch.org/whl/cu128 \
+      --index-strategy unsafe-best-match \
+      -o requirements_lock.txt
   '';
 
   enterShell = ''

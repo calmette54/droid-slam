@@ -5,8 +5,6 @@ ruff_test(
     name = "ruff_test",
     srcs = [
         "//integration:standalone_image_test",
-        "//lib/greeter",
-        "//standalone:hello-world",
-        "//test/greeter:greeter_test",
+        "//tools:cuda_check",
     ],
 )

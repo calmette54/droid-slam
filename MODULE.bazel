@@ -118,9 +118,11 @@ use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64")
 
 #--------------------- Python dependencies --------------
 # Direct dependencies in requirements.in; update the lock with
-# `bazelisk run //:requirements.update`.
+# `lock-requirements` (devenv script, uv). PyTorch and its CUDA wheels come
+# from the PyTorch index, everything else from PyPI.
 pip_project = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip_project.parse(
+    extra_pip_args = ["--extra-index-url=https://download.pytorch.org/whl/cu128"],
     hub_name = "pypi",
     python_version = "3.12",
     requirements_lock = "//:requirements_lock.txt",

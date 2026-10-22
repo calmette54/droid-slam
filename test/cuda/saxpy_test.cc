@@ -1,6 +1,6 @@
-#include <vector>
-
 #include "test/cuda/saxpy.h"
+
+#include <vector>
 
 int main() {
   constexpr int kN = 1 << 16;

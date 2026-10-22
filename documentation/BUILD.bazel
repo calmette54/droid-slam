@@ -7,8 +7,6 @@ doxygen(
     srcs = [
         "README.md",
         ":header",
-        "//lib/greeter:sources",
-        "//standalone:sources",
     ] + glob(["_static/*"]),
     aliases = [
         "license=@par License:^^",

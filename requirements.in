@@ -1,1 +1,23 @@
+# Direct Python dependencies of DROID-SLAM (upstream requirements_frozen.txt
+# pins, see UPSTREAM.md). Regenerate requirements_lock.txt with
+# `lock-requirements` (devenv script).
+
+# PyTorch with CUDA 12.8 (https://download.pytorch.org/whl/cu128)
+torch==2.7.0+cu128
+torchvision==0.22.0+cu128
+
+numpy==2.2.5
+scipy==1.15.2
+opencv-python-headless==4.11.0.86
+open3d==0.19.0
+evo==1.31.1
+gdown==5.2.0
+tensorboard==2.19.0
+tqdm==4.67.1
+pyyaml==6.0.2
+
+# Interactive visualizer (droid_slam/visualizer)
+moderngl
+moderngl-window
+
 pytest
