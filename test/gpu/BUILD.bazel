@@ -47,3 +47,30 @@ py_test(
         requirement("torch"),
     ],
 )
+
+# Accuracy: EuRoC MH_03_medium from the sample data against the paper's ATE.
+# DROID_SAMPLE_DIR is the absolute path of data/ (//tools:download_dataset -- sample).
+py_test(
+    name = "euroc_mh03_ate_test",
+    size = "large",
+    srcs = ["euroc_mh03_ate_test.py"],
+    data = [
+        "//benchmark:accuracy",
+        "//data:euroc_groundtruth",
+        "//evaluation_scripts:test_euroc",
+        "@droid_weights//file",
+    ],
+    env = {"DROID_DEFAULT_WEIGHTS": "$(rlocationpath @droid_weights//file)"},
+    env_inherit = ["DROID_SAMPLE_DIR"],
+    tags = [
+        "local",
+        "manual",
+        "requires-gpu",
+    ],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//benchmark:accuracy_lib",
+        "@rules_python//python/runfiles",
+        requirement("pytest"),
+    ],
+)

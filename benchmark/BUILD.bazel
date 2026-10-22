@@ -1,0 +1,37 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+
+py_library(
+    name = "accuracy_lib",
+    srcs = ["accuracy.py"],
+    data = ["reference.json"],
+    visibility = ["//test:__subpackages__"],
+    deps = [
+        "//tools:datasets",
+        "@rules_python//python/runfiles",
+        requirement("numpy"),
+        requirement("torch"),
+    ],
+)
+
+# Accuracy against the paper (not a speed benchmark): needs a GPU and the
+# datasets (//tools:download_dataset). `bazelisk run //benchmark:accuracy -- --help`
+py_binary(
+    name = "accuracy",
+    srcs = ["accuracy.py"],
+    data = [
+        "//data:euroc_groundtruth",
+        "//evaluation_scripts:test_eth3d",
+        "//evaluation_scripts:test_euroc",
+        "//evaluation_scripts:test_tartanair",
+        "//evaluation_scripts:test_tum",
+        "@droid_weights//file",
+    ],
+    env = {"DROID_DEFAULT_WEIGHTS": "$(rlocationpath @droid_weights//file)"},
+    visibility = [
+        "//test:__subpackages__",
+        "//test/lint:__pkg__",
+    ],
+    deps = [":accuracy_lib"],
+)

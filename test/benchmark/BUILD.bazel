@@ -1,0 +1,14 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_test(
+    name = "benchmark_test",
+    size = "small",
+    srcs = ["benchmark_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//benchmark:accuracy_lib",
+        "//tools:download_dataset_lib",
+        requirement("pytest"),
+    ],
+)

@@ -1,0 +1,72 @@
+{
+  "_comment": "DROID-SLAM rows of Teed & Deng, 'DROID-SLAM: Deep Visual SLAM for Monocular, Stereo, and RGB-D Cameras', NeurIPS 2021 (arXiv:2108.10869v2). ATE in meters.",
+  "euroc": {
+    "source": "Table 3, monocular EuRoC",
+    "ate": {
+      "MH_01_easy": 0.013,
+      "MH_02_easy": 0.014,
+      "MH_03_medium": 0.022,
+      "MH_04_difficult": 0.043,
+      "MH_05_difficult": 0.043,
+      "V1_01_easy": 0.037,
+      "V1_02_medium": 0.012,
+      "V1_03_difficult": 0.02,
+      "V2_01_easy": 0.017,
+      "V2_02_medium": 0.013,
+      "V2_03_difficult": 0.014
+    },
+    "mean_ate": 0.022
+  },
+  "euroc_stereo": {
+    "source": "Table 5 (appendix), stereo EuRoC; transcribed from a summary of the paper, verify against the PDF",
+    "ate": {
+      "MH_01_easy": 0.015,
+      "MH_02_easy": 0.013,
+      "MH_03_medium": 0.035,
+      "MH_04_difficult": 0.048,
+      "MH_05_difficult": 0.04,
+      "V1_01_easy": 0.037,
+      "V1_02_medium": 0.011,
+      "V1_03_difficult": 0.02,
+      "V2_01_easy": 0.018,
+      "V2_02_medium": 0.015,
+      "V2_03_difficult": 0.017
+    },
+    "mean_ate": 0.024
+  },
+  "tum": {
+    "source": "Table 4, TUM-RGBD fr1; transcribed from a summary of the paper, verify against the PDF",
+    "ate": {
+      "rgbd_dataset_freiburg1_360": 0.111,
+      "rgbd_dataset_freiburg1_desk": 0.018,
+      "rgbd_dataset_freiburg1_desk2": 0.042,
+      "rgbd_dataset_freiburg1_floor": 0.021,
+      "rgbd_dataset_freiburg1_plant": 0.016,
+      "rgbd_dataset_freiburg1_room": 0.049,
+      "rgbd_dataset_freiburg1_rpy": 0.026,
+      "rgbd_dataset_freiburg1_teddy": 0.048,
+      "rgbd_dataset_freiburg1_xyz": 0.012
+    },
+    "mean_ate": 0.038
+  },
+  "tartanair": {
+    "source": "Table 1, TartanAir monocular test (the paper lists the MH scenes only); mean over MH000-MH007",
+    "ate": {
+      "MH000": 0.08,
+      "MH001": 0.05,
+      "MH002": 0.04,
+      "MH003": 0.02,
+      "MH004": 0.01,
+      "MH005": 1.31,
+      "MH006": 0.3,
+      "MH007": 0.07
+    },
+    "mean_ate": 0.24
+  },
+  "tartanair_stereo": {
+    "source": "The paper reports no per-scene stereo ATE (Table 2 uses the competition's relative pose error)"
+  },
+  "eth3d": {
+    "source": "The paper reports the ETH3D-SLAM leaderboard AUC over all scenes (Figure 4), not per-scene ATE; compare auc_2cm/auc_8cm by hand"
+  }
+}

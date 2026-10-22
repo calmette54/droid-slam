@@ -1,5 +1,6 @@
 load("@pypi//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
 
 # `bazelisk run //tools:cuda_check`: PyTorch version, CUDA version and GPUs.
 py_binary(
@@ -18,4 +19,32 @@ py_binary(
     srcs = ["download_model.py"],
     visibility = ["//test/lint:__pkg__"],
     deps = [requirement("gdown")],
+)
+
+# The evaluation datasets (sequences, URLs, layout), see tools/download_*.sh.
+py_library(
+    name = "datasets",
+    srcs = ["datasets.py"],
+    visibility = [
+        "//benchmark:__pkg__",
+        "//test:__subpackages__",
+    ],
+)
+
+py_library(
+    name = "download_dataset_lib",
+    srcs = ["download_dataset.py"],
+    visibility = ["//test:__subpackages__"],
+    deps = [
+        ":datasets",
+        requirement("gdown"),
+    ],
+)
+
+# `bazelisk run //tools:download_dataset -- sample|euroc|tum|eth3d|tartanair`
+py_binary(
+    name = "download_dataset",
+    srcs = ["download_dataset.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [":download_dataset_lib"],
 )

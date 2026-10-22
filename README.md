@@ -28,7 +28,7 @@ Run the demo on the upstream sample data:
 
 ```bash
 bazelisk run //tools:download_model            # droid.pth
-./tools/download_sample_data.sh                # data/
+bazelisk run //tools:download_dataset -- sample  # data/
 droid-run //:demo --imagedir=data/sfm_bench/rgb --calib=calib/eth.txt
 ```
 
@@ -55,6 +55,27 @@ docker run --rm --gpus all -v "$PWD:/work" droid-slam:integration-test \
     --imagedir=/work/data/sfm_bench/rgb --calib=calib/eth.txt \
     --weights=/work/droid.pth --disable_vis
 ```
+
+## Accuracy benchmark
+
+The upstream evaluation (TartanAir, EuRoC, TUM-RGBD and ETH3D-SLAM) runs with
+`//benchmark:accuracy`. It calls the upstream `evaluation_scripts/test_*.py`
+once per sequence, with the arguments of `tools/evaluate_*.sh`. It writes the
+ATE per sequence to `results/benchmark/<suite>.json` and compares it with the
+paper (`benchmark/reference.json`):
+
+```bash
+bazelisk run //tools:download_dataset -- euroc tum   # datasets/
+bazelisk run //benchmark:accuracy -- euroc --check   # also euroc_stereo, tum, eth3d, tartanair[_stereo]
+bazelisk run //benchmark:accuracy -- euroc --only MH_03_medium -- --buffer=256
+DROID_SAMPLE_DIR=$PWD/data bazelisk test --config=gpu //test/gpu:euroc_mh03_ate_test
+```
+
+Upstream says EuRoC and TUM-RGBD fit an 11 GB GPU, while TartanAir and ETH3D-SLAM
+need 24 GB. Suites that need more memory than the GPU has are skipped unless
+`--force` is given; arguments after the second `--` (e.g. a smaller
+`--buffer`) go to every run. The runs are not deterministic, so `--check`
+allows 25% plus 1 cm over the paper per sequence.
 
 ## Layout
 

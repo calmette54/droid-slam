@@ -22,6 +22,12 @@ The upstream code is licensed under the BSD 3-Clause License (`LICENSE`).
 `third_party/tartanair_tools`). The upstream README is in
 `documentation/UPSTREAM_README.md`.
 
+The upstream shell scripts in `tools/` (`download_*.sh`, `evaluate_*.sh`,
+`validate_tartanair.sh`) are kept for reference but do not work here: they call
+`python evaluation_scripts/...`, which lacks the Bazel-built extensions. Use
+`//tools:download_dataset` and `//benchmark:accuracy`, which have the same
+sequence lists, URLs and arguments (`tools/datasets.py`).
+
 These paths are excluded from the formatters and linters so that they stay
 diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 
