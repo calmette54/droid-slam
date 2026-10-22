@@ -1,0 +1,46 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+# bazelisk test --config=gpu //test/gpu/...
+
+py_test(
+    name = "droid_backends_test",
+    size = "small",
+    srcs = ["droid_backends_test.py"],
+    tags = ["requires-gpu"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//droid_slam",
+        requirement("pytest"),
+    ],
+)
+
+# End to end: DROID_WEIGHTS (droid.pth, //tools:download_model) and
+# DROID_IMAGEDIR (e.g. data/sfm_bench/rgb from tools/download_sample_data.sh)
+# must be absolute paths; DROID_CALIB is a file in calib/ (default eth.txt).
+py_test(
+    name = "demo_smoke_test",
+    size = "large",
+    srcs = ["demo_smoke_test.py"],
+    data = [
+        "//:calib",
+        "//:demo",
+    ],
+    env_inherit = [
+        "DROID_CALIB",
+        "DROID_IMAGEDIR",
+        "DROID_WEIGHTS",
+    ],
+    # "manual": needs the weights and a dataset, so only when asked for.
+    tags = [
+        "local",
+        "manual",
+        "requires-gpu",
+    ],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "@rules_python//python/runfiles",
+        requirement("pytest"),
+        requirement("torch"),
+    ],
+)

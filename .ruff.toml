@@ -22,3 +22,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [lint.isort]
 # Modules built in this repository (imported by their top-level name).
 known-first-party = ["_droid_backends", "droid_backends"]
+# Upstream DROID-SLAM modules (droid_slam/ is on the Python path).
+known-third-party = ["modules", "lietorch"]

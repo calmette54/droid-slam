@@ -8,6 +8,8 @@ ruff_test(
         "//src:droid_backends",
         "//test/droid_slam:droid_slam_test",
         "//test/extensions:import_test",
+        "//test/gpu:demo_smoke_test",
+        "//test/gpu:droid_backends_test",
         "//test/lietorch:lietorch_cases",
         "//test/lietorch:lietorch_cpu_test",
         "//test/lietorch:lietorch_cuda_test",

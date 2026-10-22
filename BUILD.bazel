@@ -69,16 +69,19 @@ py_binary(
     srcs = ["demo.py"],
     data = [":calib"],
     deps = ["//droid_slam"],
+    visibility = ["//visibility:public"],
 )
 
 py_binary(
     name = "train",
     srcs = ["train.py"],
     deps = ["//droid_slam"],
+    visibility = ["//visibility:public"],
 )
 
 py_binary(
     name = "view_reconstruction",
     srcs = ["view_reconstruction.py"],
     deps = ["//droid_slam"],
+    visibility = ["//visibility:public"],
 )
