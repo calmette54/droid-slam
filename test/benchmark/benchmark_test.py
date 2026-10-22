@@ -47,6 +47,13 @@ def test_parse_tartanair():
     assert accuracy.SUITES["tartanair"].pattern("MH004").findall(out) == ["0.0123"]
 
 
+def test_memory_args():
+    assert accuracy.memory_args("auto", 5.7) == accuracy.LOW_MEMORY_ARGS
+    assert accuracy.memory_args("auto", 24.0) == []
+    assert accuracy.memory_args("upstream", 5.7) == []
+    assert accuracy.memory_args("low", 24.0) == accuracy.LOW_MEMORY_ARGS
+
+
 def test_check_against_paper():
     reference = {"euroc": {"ate": {"MH_01_easy": 0.013, "MH_02_easy": 0.014}}}
     results = {

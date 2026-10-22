@@ -28,6 +28,14 @@ from python.runfiles import Runfiles
 
 from tools import datasets
 
+# A sparser global bundle adjustment (upstream: --backend_thresh=24 or 22,
+# --backend_nms=2 or 3) for GPUs below upstream's 11 GB. Its per-edge state
+# (up to 16 edges per keyframe) is what runs out of memory on a 6 GB GPU. On
+# EuRoC MH_03 with an RTX 3060 (6 GB) it gives ATE 0.0220 m (paper: 0.022).
+LOW_MEMORY_ARGS = ["--backend_thresh=20", "--backend_nms=3"]
+# Upstream: "EuRoC and TUM can be run on a 1080Ti" (11 GB).
+LOW_MEMORY_GB = 11
+
 # evo's APE statistics, as matched by evaluation_scripts/parse_results.py.
 EVO_RMSE = re.compile(r"^\s*rmse\s+([0-9]+\.[0-9]+)", re.MULTILINE)
 
@@ -92,11 +100,19 @@ SUITES = {
 }
 
 
+def memory_args(memory: str, gpu_gb: float) -> list[str]:
+    """The extra arguments of --memory (auto: low below upstream's 11 GB)."""
+    low = memory == "low" or (memory == "auto" and gpu_gb < LOW_MEMORY_GB)
+    return LOW_MEMORY_ARGS if low else []
+
+
 def run_sequence(suite: Suite, seq: str, cmd: list[str], log: pathlib.Path) -> dict:
     start = time.monotonic()
+    # Fewer out-of-memory errors from fragmentation on small GPUs.
+    env = {"PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"} | os.environ
     with log.open("w") as f:
         process = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=f, text=True, cwd=log.parent, check=False
+            cmd, stdout=subprocess.PIPE, stderr=f, text=True, cwd=log.parent, env=env, check=False
         )
     seconds = time.monotonic() - start
     with log.open("a") as f:
@@ -140,6 +156,12 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="fail if worse than the paper")
     parser.add_argument("--tolerance", type=float, default=0.25, help="relative, for --check")
     parser.add_argument("--force", action="store_true", help="run even if the GPU looks too small")
+    parser.add_argument(
+        "--memory",
+        choices=["auto", "upstream", "low"],
+        default="auto",
+        help=f"low: {' '.join(LOW_MEMORY_ARGS)} (auto: below {LOW_MEMORY_GB} GB)",
+    )
     parser.add_argument("extra", nargs="*", help="after --: passed to every run")
     args = parser.parse_args()
 
@@ -156,14 +178,17 @@ def main() -> int:
         return 1
     gpu = torch.cuda.get_device_properties(0)
     gpu_gb = gpu.total_memory / 2**30
-    if gpu_gb < dataset.min_gpu_gb and not args.force:
+    # The low-memory arguments cover upstream's 11 GB suites, not the 24 GB ones.
+    if gpu_gb < dataset.min_gpu_gb and dataset.min_gpu_gb > LOW_MEMORY_GB and not args.force:
         print(
             f"{args.suite}: upstream needs about {dataset.min_gpu_gb} GB of GPU memory, "
-            f"{gpu.name} has {gpu_gb:.1f} GB. Skipping (--force to try anyway, "
-            "e.g. with -- --buffer=256).",
+            f"{gpu.name} has {gpu_gb:.1f} GB. Skipping (--force to try anyway).",
             file=sys.stderr,
         )
         return 0
+    run_args = memory_args(args.memory, gpu_gb) + args.extra
+    if run_args:
+        print(f"{gpu.name} ({gpu_gb:.1f} GB): every run gets {' '.join(run_args)}")
 
     sequences = [s for s in suite.sequences if not args.only or s in args.only]
     if suite.dataset == "tartanair":
@@ -187,7 +212,7 @@ def main() -> int:
             *suite.args(root, seq, runfiles),
             f"--weights={weights}",
             "--disable_vis",
-            *args.extra,
+            *run_args,
         ]
         results[seq] = run_sequence(suite, seq, cmd, out / f"{seq}.log")
         r = results[seq]
@@ -202,7 +227,7 @@ def main() -> int:
         "suite": args.suite,
         "gpu": gpu.name,
         "torch": torch.__version__,
-        "extra_args": args.extra,
+        "run_args": run_args,
         "mean_ate": float(np.mean(ates)) if ates else None,
         "failed": len(results) - len(ates),
         # ETH3D-SLAM's leaderboard metric (evaluation_scripts/parse_results.py).

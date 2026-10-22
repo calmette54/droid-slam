@@ -67,15 +67,19 @@ paper (`benchmark/reference.json`):
 ```bash
 bazelisk run //tools:download_dataset -- euroc tum   # datasets/
 bazelisk run //benchmark:accuracy -- euroc --check   # also euroc_stereo, tum, eth3d, tartanair[_stereo]
-bazelisk run //benchmark:accuracy -- euroc --only MH_03_medium -- --buffer=256
+bazelisk run //benchmark:accuracy -- euroc --only MH_01_easy MH_03_medium
 DROID_SAMPLE_DIR=$PWD/data bazelisk test --config=gpu //test/gpu:euroc_mh03_ate_test
 ```
 
-Upstream says EuRoC and TUM-RGBD fit an 11 GB GPU, while TartanAir and ETH3D-SLAM
-need 24 GB. Suites that need more memory than the GPU has are skipped unless
-`--force` is given; arguments after the second `--` (e.g. a smaller
-`--buffer`) go to every run. The runs are not deterministic, so `--check`
-allows 25% plus 1 cm over the paper per sequence.
+Upstream says EuRoC and TUM-RGBD fit an 11 GB GPU, while TartanAir and
+ETH3D-SLAM need 24 GB. Below 11 GB, the runs use a sparser global bundle
+adjustment (`--backend_thresh=20 --backend_nms=3`, `--memory=low`; force either
+way with `--memory`). Its per-edge state is what overflows smaller GPUs. With it,
+EuRoC MH_03 on an RTX 3060 Laptop GPU (6 GB) reaches an ATE of 0.0220 m; the
+paper reports 0.022 m. The 24 GB suites are skipped on smaller GPUs unless
+`--force` is given. Arguments after the second `--` go to every run, and the
+JSON records all extra arguments (`run_args`). `--check` allows 25% plus 1 cm
+over the paper per sequence.
 
 ## Layout
 

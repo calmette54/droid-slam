@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 
+import torch
 from python.runfiles import Runfiles
 
 from benchmark import accuracy
@@ -30,6 +31,8 @@ def test_mh03_ate():
         f"--gt={runfiles.Rlocation(f'_main/data/euroc_groundtruth/{SEQ}.txt')}",
         f"--weights={runfiles.Rlocation(os.environ['DROID_DEFAULT_WEIGHTS'])}",
         "--disable_vis",
+        # Below upstream's 11 GB, a sparser global BA (see benchmark/accuracy.py).
+        *accuracy.memory_args("auto", torch.cuda.get_device_properties(0).total_memory / 2**30),
     ]
     log = pathlib.Path(os.environ.get("TEST_UNDECLARED_OUTPUTS_DIR", os.environ["TEST_TMPDIR"]))
     result = accuracy.run_sequence(suite, SEQ, cmd, log / f"{SEQ}.log")

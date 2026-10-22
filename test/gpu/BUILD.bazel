@@ -72,5 +72,6 @@ py_test(
         "//benchmark:accuracy_lib",
         "@rules_python//python/runfiles",
         requirement("pytest"),
+        requirement("torch"),
     ],
 )
