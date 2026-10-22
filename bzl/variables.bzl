@@ -14,3 +14,7 @@ REPOSITORY_URL = "https://github.com/calmette54/droid-slam"
 
 # Name of the container image; the registry comes from tools/workspace_status.sh.
 IMAGE_NAME = "droid-slam"
+
+# The DROID-SLAM sources this repository was imported from (see UPSTREAM.md).
+UPSTREAM_REPOSITORY = "https://github.com/princeton-vl/droid-slam"
+UPSTREAM_COMMIT = "2dfd39f0dcad44012ca7bbb8aa70b55edbfa9c99"

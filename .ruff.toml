@@ -3,6 +3,17 @@
 line-length = 100
 target-version = "py312"
 
+# Code imported from upstream DROID-SLAM stays as-is (see UPSTREAM.md), also
+# when the files are passed explicitly (pre-commit, format_multirun).
+force-exclude = true
+extend-exclude = [
+    "droid_slam",
+    "evaluation_scripts",
+    "demo.py",
+    "train.py",
+    "view_reconstruction.py",
+]
+
 [lint]
 # pycodestyle, pyflakes, isort, pyupgrade, bugbear, simplify
 select = ["E", "F", "I", "UP", "B", "SIM"]

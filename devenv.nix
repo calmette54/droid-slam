@@ -4,7 +4,19 @@
   config,
   inputs,
   ...
-}: {
+}: let
+  # Code imported from upstream DROID-SLAM stays as-is (see UPSTREAM.md).
+  upstream = [
+    "^droid_slam/"
+    "^src/[^/]+\\.(cpp|cu)$"
+    "^tools/[^/]+\\.sh$"
+    "^evaluation_scripts/"
+    "^(demo|train|view_reconstruction)\\.py$"
+    "^documentation/UPSTREAM_README\\.md$"
+    "^calib/"
+    "^data/"
+  ];
+in {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
 
@@ -92,11 +104,13 @@
 
     end-of-file-fixer = {
       enable = true;
+      excludes = upstream;
       description = "Ensures that the file is either empty, or ends with a single newline";
     };
 
     markdownlint = {
       enable = true;
+      excludes = upstream;
       description = "Style checker and linter for markdown files";
       # Tables, commands and prompt files exceed 80 columns; agent and skill
       # files start with front matter and a prompt, not a heading.
@@ -108,6 +122,7 @@
 
     mixed-line-endings = {
       enable = true;
+      excludes = upstream;
       description = "Resolve mixed line endings";
     };
 
@@ -124,11 +139,13 @@
 
     shellcheck = {
       enable = true;
+      excludes = upstream;
       description = "Format shell files";
     };
 
     trim-trailing-whitespace = {
       enable = true;
+      excludes = upstream;
       description = "Trim trailing whitespace";
     };
 
@@ -148,7 +165,7 @@
       # You probably only need to specify one of `files` or `types`:
       types_or = ["c" "c++" "python"];
       # Exclude files that were matched by these patterns (default: [ ] (none)):
-      excludes = [];
+      excludes = upstream;
       # The language of the hook - tells pre-commit
       # how to install the hook (default: "system")
       # see also https://pre-commit.com/#supported-languages

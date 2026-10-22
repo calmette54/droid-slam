@@ -21,3 +21,11 @@ devenv.local.nix
 
 # Python
 __pycache__/
+
+# DROID-SLAM: weights, datasets and outputs
+*.pth
+/data/*
+!/data/euroc_groundtruth
+/datasets
+/results
+/reconstructions
