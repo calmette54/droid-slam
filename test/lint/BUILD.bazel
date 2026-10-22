@@ -7,6 +7,9 @@ ruff_test(
         "//integration:standalone_image_test",
         "//src:droid_backends",
         "//test/extensions:import_test",
+        "//test/lietorch:lietorch_cases",
+        "//test/lietorch:lietorch_cpu_test",
+        "//test/lietorch:lietorch_cuda_test",
         "//tools:cuda_check",
     ],
 )

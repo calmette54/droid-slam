@@ -13,6 +13,17 @@ use_repo(version, "bazel_features_globals", "bazel_features_version")
 # https://registry.bazel.build/modules/eigen (DROID-SLAM and lietorch kernels)
 bazel_dep(name = "eigen", version = "3.4.1.bcr.1")
 
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# Lie groups for PyTorch, the commit pinned by DROID-SLAM's submodule.
+http_archive(
+    name = "lietorch",
+    build_file = "//third_party/lietorch:lietorch.BUILD",
+    sha256 = "3278df158ff2749c47485cac19da2aeda1cc5efc08fa3af94ce7911ea6bb90ea",
+    strip_prefix = "lietorch-7f687644fcea81ab337831749445224503c1290d",
+    urls = ["https://github.com/princeton-vl/lietorch/archive/7f687644fcea81ab337831749445224503c1290d.tar.gz"],
+)
+
 #------------- Testing dependencies -----------------
 
 #------------- Documentation dependencies -----------

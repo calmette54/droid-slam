@@ -25,6 +25,7 @@ _NVCC_COPTS = [
 
 _TORCH = Label("//third_party/torch")
 _PYTHON_HEADERS = Label("@rules_python//python/cc:current_py_cc_headers")
+_CUDA_HEADERS = Label("@cuda//:cuda_headers")
 
 def torch_cuda_extension(
         name,
@@ -65,7 +66,7 @@ def torch_cuda_extension(
         copts = ["-std=c++17", "-fvisibility=hidden"] + copts,
         includes = includes,
         local_defines = defines,
-        deps = deps + [_TORCH, _PYTHON_HEADERS],
+        deps = deps + [_TORCH, _PYTHON_HEADERS, _CUDA_HEADERS],
         alwayslink = True,
         **common
     )

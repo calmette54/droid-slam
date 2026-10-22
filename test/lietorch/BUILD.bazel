@@ -1,0 +1,34 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_library(
+    name = "lietorch_cases",
+    testonly = True,
+    srcs = ["lietorch_cases.py"],
+    imports = ["."],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "@lietorch",
+        "@lietorch//:run_tests",
+        requirement("pytest"),
+        requirement("torch"),
+    ],
+)
+
+py_test(
+    name = "lietorch_cpu_test",
+    size = "medium",
+    srcs = ["lietorch_cpu_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [":lietorch_cases"],
+)
+
+py_test(
+    name = "lietorch_cuda_test",
+    size = "medium",
+    srcs = ["lietorch_cuda_test.py"],
+    tags = ["requires-gpu"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [":lietorch_cases"],
+)
