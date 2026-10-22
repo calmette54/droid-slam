@@ -156,9 +156,13 @@ in {
       description = "Style checker and linter for markdown files";
       # Tables, commands and prompt files exceed 80 columns; agent and skill
       # files start with front matter and a prompt, not a heading.
+      # Tables use the compact `|---|` style (MD060); the Doxygen pages use
+      # <pre class="mermaid"> blocks (MD033).
       settings.configuration = {
         MD013 = false;
+        MD033.allowed_elements = ["pre"];
         MD041 = false;
+        MD060 = false;
       };
     };
 
@@ -181,7 +185,8 @@ in {
 
     shellcheck = {
       enable = true;
-      excludes = upstream;
+      # .envrc is a direnv file, not a shell script.
+      excludes = upstream ++ ["^\\.envrc$"];
       description = "Format shell files";
     };
 
