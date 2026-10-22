@@ -1,0 +1,30 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
+# Upstream evaluation scripts, see tools/evaluate_*.sh for their arguments.
+[
+    py_binary(
+        name = name,
+        srcs = [name + ".py"],
+        data = ["//:calib"] + data,
+        deps = [
+            "//droid_slam",
+            requirement("evo"),
+            requirement("matplotlib"),
+            requirement("pyyaml"),
+        ] + deps,
+    )
+    for name, data, deps in [
+        ("test_eth3d", [], []),
+        ("test_euroc", ["//data:euroc_groundtruth"], []),
+        ("test_tartanair", [], ["//third_party/tartanair_tools:evaluation"]),
+        ("test_tum", [], []),
+        ("validate_tartanair", [], ["//third_party/tartanair_tools:evaluation"]),
+    ]
+]
+
+py_binary(
+    name = "parse_results",
+    srcs = ["parse_results.py"],
+    deps = [requirement("numpy")],
+)

@@ -1,0 +1,29 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+
+# https://github.com/castacks/tartanair_tools, as vendored by DROID-SLAM
+# (thirdparty/tartanair_tools, see UPSTREAM.md). BSD 3-Clause, CMU.
+licenses(["notice"])
+
+exports_files(["LICENSE"])
+
+# `from evaluation.tartanair_evaluator import TartanAirEvaluator`
+py_library(
+    name = "evaluation",
+    srcs = glob(["evaluation/*.py"]),
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("matplotlib"),
+        requirement("numpy"),
+        requirement("scipy"),
+    ],
+)
+
+# `bazelisk run //third_party/tartanair_tools:download_training -- --output-dir ...`
+py_binary(
+    name = "download_training",
+    srcs = ["download_training.py"],
+    data = ["download_training_zipfiles.txt"],
+)

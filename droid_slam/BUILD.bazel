@@ -1,0 +1,29 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_library.bzl", "py_library")
+
+# The DROID-SLAM system (upstream droid_slam/). Upstream imports its modules
+# by their top-level names (`from droid import Droid`, `import geom...`), so
+# this directory is on the Python path.
+py_library(
+    name = "droid_slam",
+    srcs = glob(["**/*.py"]),
+    data = ["data_readers/tartan_test.txt"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src:droid_backends",
+        "//third_party/torch_scatter",
+        "@lietorch",
+        requirement("moderngl"),
+        requirement("moderngl-window"),
+        requirement("numpy"),
+        requirement("open3d"),
+        requirement("opencv-python-headless"),
+        requirement("pyglm"),
+        requirement("scipy"),
+        requirement("tensorboard"),
+        requirement("torch"),
+        requirement("torchvision"),
+        requirement("tqdm"),
+    ],
+)

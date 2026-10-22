@@ -20,8 +20,12 @@ import torch.nn.functional as F
 
 def show_image(image):
     image = image.permute(1, 2, 0).cpu().numpy()
-    cv2.imshow('image', image / 255.0)
-    cv2.waitKey(1)
+    try:
+        cv2.imshow('image', image / 255.0)
+        cv2.waitKey(1)
+    except cv2.error:
+        # opencv-python-headless has no GUI (see UPSTREAM.md).
+        pass
 
 def image_stream(imagedir, calib, stride):
     """ image generator """

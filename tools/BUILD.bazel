@@ -11,3 +11,11 @@ py_binary(
         requirement("torch"),
     ],
 )
+
+# `bazelisk run //tools:download_model`: the pretrained weights (droid.pth).
+py_binary(
+    name = "download_model",
+    srcs = ["download_model.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [requirement("gdown")],
+)

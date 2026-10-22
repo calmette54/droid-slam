@@ -15,6 +15,7 @@
     "^documentation/UPSTREAM_README\\.md$"
     "^calib/"
     "^data/"
+    "^third_party/tartanair_tools/"
   ];
 in {
   # https://devenv.sh/basics/
@@ -26,6 +27,10 @@ in {
     pkgs.git
     pkgs.bazelisk
     pkgs.uv
+
+    # tools/download_*.sh
+    pkgs.wget
+    pkgs.unzip
 
     # Utilities
     pkgs.commitizen
@@ -65,9 +70,30 @@ in {
       -o requirements_lock.txt
   '';
 
+  # Run a DROID-SLAM binary from the current directory, so that the upstream
+  # relative paths work, e.g.
+  #   droid-run //:demo --imagedir=data/sfm_bench/rgb --calib=calib/eth.txt
+  scripts.droid-run.exec = ''
+    set -euo pipefail
+    target="$1"
+    shift
+    exec bazelisk run --run_under="cd '$PWD' &&" "$target" -- "$@"
+  '';
+
+  # NVIDIA driver and the PyTorch/CUDA setup seen by Bazel.
+  scripts.gpu-check.exec = ''
+    nvidia-smi || echo "nvidia-smi failed: install the NVIDIA driver (or reboot after an upgrade)"
+    bazelisk run //tools:cuda_check
+  '';
+
   enterShell = ''
     # Initialize the credential-helper
     credential-helper
+
+    # NixOS: libcuda.so from the system driver
+    if [ -d /run/opengl-driver/lib ]; then
+      export LD_LIBRARY_PATH=/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+    fi
 
     # Show the bazel version used by the project
     bazelisk version

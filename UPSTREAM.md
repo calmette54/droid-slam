@@ -18,7 +18,8 @@ The upstream code is licensed under the BSD 3-Clause License (`LICENSE`).
 
 `droid_slam/`, `src/`, `demo.py`, `train.py`, `view_reconstruction.py`,
 `evaluation_scripts/`, `tools/*.sh`, `calib/`, `data/euroc_groundtruth/`,
-`misc/`, `LICENSE`. The upstream README is in
+`misc/`, `LICENSE`, `thirdparty/tartanair_tools` (partially, as
+`third_party/tartanair_tools`). The upstream README is in
 `documentation/UPSTREAM_README.md`.
 
 These paths are excluded from the formatters and linters so that they stay
@@ -31,7 +32,7 @@ diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 | `setup.py` (`droid_backends` CUDAExtension) | `//src:droid_backends` (rules_cuda) |
 | `thirdparty/lietorch` submodule | `@lietorch` (`http_archive`) |
 | `thirdparty/pytorch_scatter` submodule | `//third_party/torch_scatter` (pure PyTorch `scatter_sum`/`scatter_mean`) |
-| `thirdparty/tartanair_tools` | not used by the SLAM system |
+| `thirdparty/tartanair_tools` | `third_party/tartanair_tools` (only `evaluation/`, `download_training.py`, LICENSE, README; unchanged) |
 | `requirements*.txt`, `environment*.yaml` | `requirements.in` / `requirements_lock.txt` |
 | `.gitmodules`, `.gitignore` | Bazel external repositories, template `.gitignore` |
 
@@ -44,4 +45,5 @@ diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 
 ## Local patches
 
-None yet.
+- `demo.py`: `show_image` ignores the `cv2.error` raised by
+  `opencv-python-headless` (no GUI); use `--disable_vis` to skip it.

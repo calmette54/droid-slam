@@ -1,0 +1,13 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_test(
+    name = "droid_slam_test",
+    size = "small",
+    srcs = ["droid_slam_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//droid_slam",
+        requirement("pytest"),
+    ],
+)

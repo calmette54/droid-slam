@@ -6,6 +6,7 @@ ruff_test(
     srcs = [
         "//integration:standalone_image_test",
         "//src:droid_backends",
+        "//test/droid_slam:droid_slam_test",
         "//test/extensions:import_test",
         "//test/lietorch:lietorch_cases",
         "//test/lietorch:lietorch_cpu_test",
@@ -13,5 +14,6 @@ ruff_test(
         "//test/torch_scatter:torch_scatter_test",
         "//third_party/torch_scatter",
         "//tools:cuda_check",
+        "//tools:download_model",
     ],
 )

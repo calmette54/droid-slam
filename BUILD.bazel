@@ -5,6 +5,7 @@
 # See https://bazel.build/extending/config and
 # https://github.com/bazelbuild/bazel-skylib) for more info.
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag", "int_flag")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("//:bzl/defs.bzl", "revision_mode")
 
 revision_mode(
@@ -51,4 +52,33 @@ exports_files(
 alias(
     name = "format",
     actual = "//bzl/format",
+)
+
+# DROID-SLAM entry points (upstream scripts, unchanged apart from UPSTREAM.md).
+#   bazelisk run //:demo -- --imagedir=... --calib=... --weights=...
+# `bazelisk run` starts them in the runfiles tree: pass absolute paths (the
+# `droid-demo` devenv script does that).
+filegroup(
+    name = "calib",
+    srcs = glob(["calib/*.txt"]),
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "demo",
+    srcs = ["demo.py"],
+    data = [":calib"],
+    deps = ["//droid_slam"],
+)
+
+py_binary(
+    name = "train",
+    srcs = ["train.py"],
+    deps = ["//droid_slam"],
+)
+
+py_binary(
+    name = "view_reconstruction",
+    srcs = ["view_reconstruction.py"],
+    deps = ["//droid_slam"],
 )

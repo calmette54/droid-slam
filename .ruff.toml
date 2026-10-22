@@ -12,6 +12,7 @@ extend-exclude = [
     "demo.py",
     "train.py",
     "view_reconstruction.py",
+    "third_party/tartanair_tools",
 ]
 
 [lint]
