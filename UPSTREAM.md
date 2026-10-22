@@ -51,5 +51,13 @@ diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 
 ## Local patches
 
+- lietorch (`third_party/lietorch/internal_cpu_kernels.patch`, applied by the
+  `http_archive`): the CPU kernel templates in `lietorch_cpu.cpp` get internal
+  linkage. They have the same names and signatures as the CUDA kernels in
+  `lietorch_gpu.cu`, so the linker merged the weak template instantiations
+  and, in an unoptimized build, the CUDA path called the CPU loops with device
+  pointers (segmentation fault in `SO3 * SO3` on the GPU). Upstream's `-O2`
+  setuptools build hides it by inlining.
+
 - `demo.py`: `show_image` ignores the `cv2.error` raised by
   `opencv-python-headless` (no GUI); use `--disable_vis` to skip it.

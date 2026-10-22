@@ -17,7 +17,8 @@ def seed():
 
 def random_poses(n):
     xi = 0.1 * torch.randn(n, 6, device=DEVICE, dtype=torch.float64)
-    return SE3.exp(xi).float()
+    # lietorch's LieGroup.float() takes an unused `device` argument.
+    return SE3(SE3.exp(xi).data.float())
 
 
 def test_corr_index_matches_alt_corr():
