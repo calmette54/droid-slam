@@ -27,3 +27,12 @@ py_library(
         requirement("tqdm"),
     ],
 )
+
+filegroup(
+    name = "sources",
+    srcs = glob([
+        "**/*.py",
+        "**/*.txt",
+    ]),
+    visibility = ["//visibility:public"],
+)

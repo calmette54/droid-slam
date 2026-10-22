@@ -14,7 +14,8 @@ IMAGE = "droid-slam:integration-test"
 def setUpModule():
     """Loads the image built by Bazel into the container daemon."""
     try:
-        client = docker.from_env()
+        # Loading the image (PyTorch + CUDA libraries) takes minutes.
+        client = docker.from_env(timeout=1800)
         client.ping()
     except docker.errors.DockerException as e:
         raise RuntimeError(
@@ -28,22 +29,24 @@ def setUpModule():
 class StandaloneImageTest(unittest.TestCase):
     def run_image(self, *args):
         """Runs the image to completion; returns (exit code, stdout, stderr)."""
-        with DockerContainer(IMAGE).with_command(list(args)) as container:
-            result = container.get_wrapped_container().wait(timeout=60)
+        container = DockerContainer(IMAGE)
+        if args:
+            container = container.with_command(list(args))
+        with container:
+            result = container.get_wrapped_container().wait(timeout=300)
             stdout, stderr = container.get_logs()
         return result["StatusCode"], stdout.decode(), stderr.decode()
 
-    def test_default_greeting(self):
-        self.assertEqual(self.run_image(), (0, "Hello, world!\n", ""))
+    def test_demo_help(self):
+        # Imports torch, lietorch and droid_backends: the runtime is complete.
+        code, stdout, stderr = self.run_image()
+        self.assertEqual(code, 0, stderr)
+        self.assertIn("--imagedir", stdout)
 
-    def test_name_and_language(self):
-        self.assertEqual(self.run_image("Alice", "fr"), (0, "Bonjour, Alice!\n", ""))
-
-    def test_unsupported_language(self):
-        code, stdout, stderr = self.run_image("Alice", "xx")
-        self.assertEqual(code, 1)
-        self.assertEqual(stdout, "")
-        self.assertIn("unsupported language: xx", stderr)
+    def test_missing_images(self):
+        code, _, stderr = self.run_image("--imagedir=/nonexistent", "--calib=calib/eth.txt")
+        self.assertNotEqual(code, 0)
+        self.assertIn("No such file or directory: '/nonexistent'", stderr)
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ jobs:
           # Build and push the oci images
           # NOTE: this will generate tarballs as intermediate steps
           SEMANTIC_VERSION="${{ steps.version.outputs.SEMANTIC_VERSION }}"
-          bazelisk run standalone:push_image --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}"
+          bazelisk run --config=release standalone:push_image --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}"
           # Save the image registry url where the oci image is stored
           echo ""
           echo "**************************************"
@@ -110,8 +110,8 @@ jobs:
           SEMANTIC_VERSION: ${{ steps.version.outputs.SEMANTIC_VERSION }}
         run: |
           TARGET_ARCH="x86_64"
-          bazelisk build standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}"
-          TARBALL_PATH="$(bazelisk cquery standalone:tar --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}" --output files)"
+          bazelisk build standalone:tar --config=release --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}"
+          TARBALL_PATH="$(bazelisk cquery standalone:tar --config=release --revision_mode=RELEASE --release_version="${SEMANTIC_VERSION}" --config="${TARGET_ARCH}" --output files)"
           echo "TARBALL_PATH: ${TARBALL_PATH}"
           # Make the tarball path available as an output variable from this step
           echo "TARBALL_PATH=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
@@ -131,6 +131,14 @@ jobs:
 
             ```
             docker pull ${{ steps.build-push-oci-image.outputs.REGISTRY_URL }}:${{ steps.build-push-oci-image.outputs.IMAGE_TAG }}
+            ```
+
+            Run (needs the NVIDIA container toolkit):
+
+            ```
+            docker run --rm --gpus all -v "$PWD:/work" \
+              ${{ steps.build-push-oci-image.outputs.REGISTRY_URL }}:${{ steps.build-push-oci-image.outputs.IMAGE_TAG }} \
+              --imagedir=/work/data/sfm_bench/rgb --calib=calib/eth.txt --weights=/work/droid.pth --disable_vis
             ```
 
       - name: Build Documentation

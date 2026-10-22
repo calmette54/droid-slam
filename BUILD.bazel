@@ -44,6 +44,7 @@ exports_files(
         ".clang-tidy",
         ".ruff.toml",
         "LICENSE",
+        "UPSTREAM.md",
         "requirements_lock.txt",
     ],
     visibility = ["//visibility:public"],
@@ -61,6 +62,16 @@ alias(
 filegroup(
     name = "calib",
     srcs = glob(["calib/*.txt"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "scripts",
+    srcs = [
+        "demo.py",
+        "train.py",
+        "view_reconstruction.py",
+    ],
     visibility = ["//visibility:public"],
 )
 

@@ -13,7 +13,13 @@ torch_cuda_extension(
         "correlation_kernels.cu",
         "droid_kernels.cu",
     ],
+    visibility = ["//standalone:__pkg__"],
     deps = ["@eigen"],
+)
+
+exports_files(
+    ["droid_backends.py"],
+    visibility = ["//standalone:__pkg__"],
 )
 
 # `import droid_backends`

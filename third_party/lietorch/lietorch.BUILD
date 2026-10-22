@@ -24,9 +24,8 @@ torch_cuda_extension(
     deps = ["@eigen"],
 )
 
-# `import lietorch` (lietorch/group_ops.py imports `lietorch_backends`)
-py_library(
-    name = "lietorch",
+filegroup(
+    name = "python_srcs",
     srcs = glob(
         ["lietorch/*.py"],
         exclude = [
@@ -34,6 +33,12 @@ py_library(
             "lietorch/run_tests.py",
         ],
     ),
+)
+
+# `import lietorch` (lietorch/group_ops.py imports `lietorch_backends`)
+py_library(
+    name = "lietorch",
+    srcs = [":python_srcs"],
     data = [":lietorch_backends.so"],
     imports = ["."],
     deps = [

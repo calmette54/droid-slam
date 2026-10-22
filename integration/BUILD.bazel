@@ -15,6 +15,7 @@ compile_pip_requirements(
 )
 
 # Runs the //standalone image in a container and checks its output.
+# `manual`: building the image (~7 GB) takes a while.
 #
 # Needs a Docker-compatible daemon. The test inherits DOCKER_HOST and the
 # TESTCONTAINERS_* variables, e.g. for rootless Podman:
@@ -25,7 +26,7 @@ compile_pip_requirements(
 #   bazelisk test //integration:standalone_image_test
 py_test(
     name = "standalone_image_test",
-    size = "medium",
+    size = "large",
     srcs = ["standalone_image_test.py"],
     data = ["//standalone:host_image.tar"],
     env = {"IMAGE_TARBALL": "$(rlocationpath //standalone:host_image.tar)"},
@@ -42,6 +43,7 @@ py_test(
     # never on a remote executor.
     tags = [
         "local",
+        "manual",
         "requires-docker",
     ],
     visibility = ["//test/lint:__pkg__"],

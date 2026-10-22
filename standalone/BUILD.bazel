@@ -1,5 +1,6 @@
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push", "oci_load")
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "strip_prefix")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//:bzl/naming_convention.bzl", "naming_convention")
 load("//:bzl/variables.bzl", "IMAGE_NAME")
@@ -20,24 +21,103 @@ naming_convention(
     product_name = PROJECT_NAME,
 )
 
-# Packaging the binary into tar, which is needed by oci_image rule
+# Release tarball: the Bazel-built extensions with the Python sources, to be
+# used with the pinned dependencies of requirements_lock.txt (see the
+# README.md inside). The full runtime (PyTorch + CUDA wheels, ~7 GB) is
+# shipped in the container image instead: GitHub release assets are limited
+# to 2 GB.
+pkg_files(
+    name = "site_packages",
+    srcs = [
+        "//src:_droid_backends.so",
+        "//src:droid_backends.py",
+        "@lietorch//:lietorch_backends.so",
+    ],
+    prefix = "site-packages",
+)
+
+pkg_files(
+    name = "lietorch",
+    srcs = ["@lietorch//:python_srcs"],
+    prefix = "site-packages",
+    strip_prefix = strip_prefix.from_pkg(),
+)
+
+pkg_files(
+    name = "torch_scatter",
+    srcs = ["//third_party/torch_scatter:sources"],
+    prefix = "site-packages",
+    strip_prefix = strip_prefix.from_pkg(),
+)
+
+pkg_files(
+    name = "droid_slam",
+    srcs = [
+        "//:calib",
+        "//:scripts",
+        "//droid_slam:sources",
+    ],
+    strip_prefix = strip_prefix.from_root(),
+)
+
+pkg_files(
+    name = "licenses",
+    srcs = [
+        "//:LICENSE",
+        "//:UPSTREAM.md",
+        "//:requirements_lock.txt",
+    ],
+)
+
+pkg_files(
+    name = "third_party_licenses",
+    srcs = ["@lietorch//:LICENSE"],
+    renames = {"@lietorch//:LICENSE": "licenses/lietorch.LICENSE"},
+)
+
 pkg_tar(
     name = "tar",
-    srcs = ["//tools:cuda_check"],
-    # The interpreter and the libraries are in the runfiles.
-    include_runfiles = True,
+    srcs = [
+        "README.md",
+        ":droid_slam",
+        ":licenses",
+        ":lietorch",
+        ":site_packages",
+        ":third_party_licenses",
+        ":torch_scatter",
+    ],
+    extension = "tar.gz",
+    package_dir = PROJECT_NAME,
     package_file_name = select({
-        "//:is_release": "{product_name}_{target_gnu_system}_{compilation_mode}__v{version}.tar",
-        "//:is_wip": "{product_name}_{target_gnu_system}_{compilation_mode}__sha256-{commit_sha}.tar",
-        "//conditions:default": "{product_name}_{target_gnu_system}_{compilation_mode}.tar",
+        "//:is_release": "{product_name}_{target_gnu_system}_{compilation_mode}__v{version}.tar.gz",
+        "//:is_wip": "{product_name}_{target_gnu_system}_{compilation_mode}__sha256-{commit_sha}.tar.gz",
+        "//conditions:default": "{product_name}_{target_gnu_system}_{compilation_mode}.tar.gz",
     }),
-
     package_variables = ":naming",
 )
 
+# Image layer: //:demo with its runfiles (hermetic interpreter, PyTorch and
+# the CUDA libraries). Built only when needed (`manual`): it is large.
+pkg_tar(
+    name = "image_layer",
+    srcs = ["//:demo"],
+    include_runfiles = True,
+    tags = ["manual"],
+)
+
+pkg_tar(
+    name = "image_licenses",
+    srcs = [
+        ":licenses",
+        ":third_party_licenses",
+    ],
+    package_dir = "/licenses",
+)
+
 # Making image
-# The binary needs some fundamental libraries such as glibc (and libstdc++
-# for C++), so we use the docker.io/library/ubuntu image as the base.
+# The binary needs glibc and libstdc++ from the base image; the NVIDIA
+# container toolkit (`docker run --gpus all`) mounts the driver, the CUDA
+# libraries come with the PyTorch wheels.
 
 # Use the value of --embed_label under --stamp, otherwise use a deterministic constant
 # value to ensure cache hits for actions that depend on this.
@@ -58,15 +138,27 @@ expand_template(
 oci_image(
     name = "image",
     base = "@docker_lib_ubuntu",
-    tars = [":tar"],
+    cmd = ["--help"],
+    entrypoint = ["/demo"],
+    env = {
+        "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+        "NVIDIA_VISIBLE_DEVICES": "all",
+    },
     labels = ":image-annotations",
-    entrypoint = ["/cuda_check"],
+    tags = ["manual"],
+    tars = [
+        ":image_layer",
+        ":image_licenses",
+    ],
+    # Upstream relative paths (--calib=calib/eth.txt) resolve in the runfiles.
+    workdir = "/demo.runfiles/_main",
 )
 
 multi_arch(
     name = "images",
     image = ":image",
     platforms = ["//bzl/platforms:linux-x86_64"],
+    tags = ["manual"],
 )
 
 oci_image_index(
@@ -74,6 +166,7 @@ oci_image_index(
     images = [
         ":images"
     ],
+    tags = ["manual"],
 )
 
 # NOTE: STABLE_SEMANTIC_VERSION is defined in tools/workspace_status.sh
@@ -130,6 +223,7 @@ oci_push(
         "//conditions:default": ":dirty-tags",
     }),
     repository_file = ":repositories",
+    tags = ["manual"],
 )
 
 # Use with 'bazel run' to load the oci image into a container runtime.
@@ -143,6 +237,7 @@ oci_load(
         "//:is_wip": ":wip-tags",
         "//conditions:default": ":dirty-tags",
     }),
+    tags = ["manual"],
 )
 
 # Single-architecture image for the host platform, loaded by
@@ -151,11 +246,13 @@ oci_load(
     name = "load_host_image",
     image = ":image",
     repo_tags = ["droid-slam:integration-test"],
+    tags = ["manual"],
 )
 
 filegroup(
     name = "host_image.tar",
     srcs = [":load_host_image"],
     output_group = "tarball",
+    tags = ["manual"],
 )
 
