@@ -2,7 +2,7 @@
 
 Needs a GPU, the weights and a sequence (see test/gpu/BUILD.bazel):
 
-    DROID_WEIGHTS=$PWD/droid.pth DROID_IMAGEDIR=$PWD/data/sfm_bench/rgb \\
+    DROID_IMAGEDIR=$PWD/data/sfm_bench/rgb \\
         bazelisk test --config=gpu //test/gpu:demo_smoke_test
 """
 
@@ -13,7 +13,7 @@ import subprocess
 import torch
 from python.runfiles import Runfiles
 
-REQUIRED = ["DROID_WEIGHTS", "DROID_IMAGEDIR"]
+REQUIRED = ["DROID_IMAGEDIR"]
 
 
 def test_demo_reconstruction():
@@ -23,6 +23,9 @@ def test_demo_reconstruction():
     runfiles = Runfiles.Create()
     demo = runfiles.Rlocation("_main/demo")
     calib = runfiles.Rlocation("_main/calib/" + os.environ.get("DROID_CALIB", "eth.txt"))
+    weights = os.environ.get("DROID_WEIGHTS") or runfiles.Rlocation(
+        os.environ["DROID_DEFAULT_WEIGHTS"]
+    )
     out = pathlib.Path(os.environ["TEST_TMPDIR"]) / "reconstruction.pth"
 
     subprocess.run(
@@ -30,7 +33,7 @@ def test_demo_reconstruction():
             demo,
             f"--imagedir={os.environ['DROID_IMAGEDIR']}",
             f"--calib={calib}",
-            f"--weights={os.environ['DROID_WEIGHTS']}",
+            f"--weights={weights}",
             f"--reconstruction_path={out}",
             "--disable_vis",
         ],

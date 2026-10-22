@@ -40,6 +40,13 @@ The visualizer needs a display and the system OpenGL library (`libGL.so.1`,
 Ubuntu package `libgl1`), which open3d loads on import; use `--disable_vis`
 on a headless machine.
 
+The weights are the authors' `droid.pth`, loaded unchanged at run time: Bazel
+compiles only the CUDA operators, and the network is the upstream Python code.
+Besides the Google Drive original (`//tools:download_model`), the same file
+(SHA-256 `46476ef6…6024526`) is mirrored in the
+[`weights-v1`](https://github.com/calmette54/droid-slam/releases/tag/weights-v1)
+release, which Bazel fetches as `@droid_weights//file` for the tests.
+
 Or with the container image (NVIDIA container toolkit):
 
 ```bash

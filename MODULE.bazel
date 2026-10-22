@@ -24,6 +24,17 @@ http_archive(
     urls = ["https://github.com/princeton-vl/lietorch/archive/7f687644fcea81ab337831749445224503c1290d.tar.gz"],
 )
 
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+# Pretrained weights (droid.pth), mirrored unchanged from the authors' Google Drive file
+# (//tools:download_model) to a release of this repository. Use as `@droid_weights//file`.
+http_file(
+    name = "droid_weights",
+    downloaded_file_path = "droid.pth",
+    sha256 = "46476ef64cde45a97504910d6f3de2eef7b398ec1c6e4e668815c29076024526",
+    urls = ["https://github.com/calmette54/droid-slam/releases/download/weights-v1/droid.pth"],
+)
+
 #------------- Testing dependencies -----------------
 
 #------------- Documentation dependencies -----------
