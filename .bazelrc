@@ -15,6 +15,26 @@ common --credential_helper=index.docker.io=%workspace%/tools/credential-helper
 # this project are x86_64-only).
 build:x86_64 --platforms=@toolchains_llvm//platforms:linux-x86_64
 
+###############################################################################
+# CUDA (rules_cuda, hermetic toolkit from MODULE.bazel)
+#
+#   bazelisk test --config=gpu //...      # only the tests that need a GPU
+#   bazelisk build --config=release ...   # fat binaries for every supported GPU
+###############################################################################
+common --@rules_cuda//cuda:enable=true
+common --@rules_cuda//cuda:compiler=nvcc
+# Default: the development GPU (RTX 30xx, Ampere).
+common --@rules_cuda//cuda:archs=compute_86:sm_86,compute_86
+# Turing .. Blackwell, plus PTX for newer GPUs.
+common:release --@rules_cuda//cuda:archs=compute_75:sm_75;compute_80:sm_80;compute_86:sm_86;compute_89:sm_89;compute_90:sm_90;compute_120:sm_120,compute_120
+
+# Tests that need a GPU are tagged `requires-gpu`: skipped by default,
+# selected (and run one at a time) by --config=gpu.
+test --test_tag_filters=-requires-gpu
+test:gpu --test_tag_filters=requires-gpu
+test:gpu --local_test_jobs=1
+test:gpu --test_env=CUDA_VISIBLE_DEVICES
+
 # This tells Bazel how to interact with the version control system
 build --stamp --workspace_status_command=./tools/workspace_status.sh
 

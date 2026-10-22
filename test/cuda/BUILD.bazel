@@ -1,0 +1,19 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_cuda//cuda:defs.bzl", "cuda_library")
+
+# Smoke test of the hermetic CUDA toolchain (see MODULE.bazel).
+cuda_library(
+    name = "saxpy",
+    srcs = ["saxpy.cu"],
+    hdrs = ["saxpy.h"],
+)
+
+cc_test(
+    name = "saxpy_test",
+    size = "small",
+    srcs = ["saxpy_test.cc"],
+    # `bazelisk build //...` (CI) still compiles and links it without a GPU.
+    tags = ["requires-gpu"],
+    deps = [":saxpy"],
+)
+

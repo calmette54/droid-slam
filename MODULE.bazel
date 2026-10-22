@@ -39,13 +39,35 @@ bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
 ###############################################################################
 # Bazel Dependencies # https://registry.bazel.build/
 ###############################################################################
-# https://github.com/bazelbuild/rules_cc
-bazel_dep(name = "rules_cc", version = "0.1.1")
+# https://github.com/bazelbuild/rules_cc (rules_cuda needs >= 0.2.14)
+bazel_dep(name = "rules_cc", version = "0.2.14")
 # https://github.com/bazelbuild/platforms/release
 bazel_dep(name = "platforms", version = "0.0.11")
 
 #--------------------- LLVM Toolchain --------------
 include("//:bzl/toolchains.MODULE.bazel")
+
+#--------------------- CUDA Toolchain --------------
+# Hermetic CUDA from NVIDIA's redistributables (x86_64 only).
+# https://github.com/bazel-contrib/rules_cuda
+# CUDA 12.8 matches the PyTorch cu128 wheels and is the first nvcc that
+# accepts clang 19 (the LLVM toolchain) as host compiler.
+bazel_dep(name = "rules_cuda", version = "0.3.0")
+
+cuda = use_extension("@rules_cuda//cuda:extensions.bzl", "toolchain")
+cuda.redist_json(
+    name = "cuda_redist",
+    components = [
+        "cccl",
+        "cudart",
+        "nvcc",
+        "nvtx",
+    ],
+    sha256 = "daa0d766b36feaa933592162c27be5fb63b68fc547ca6886c160a35d96ee8891",
+    version = "12.8.0",
+)
+cuda.toolkit(name = "cuda")
+use_repo(cuda, "cuda")
 
 #--------------------- Python Toolchain --------------
 # https://rules-python.readthedocs.io/en/latest/toolchains.html
