@@ -10,6 +10,9 @@ bazel_dep(name = "bazel_features", version = "1.29.0", repo_name = "proto_bazel_
 version = use_extension("@proto_bazel_features//private:extensions.bzl", "version_extension")
 use_repo(version, "bazel_features_globals", "bazel_features_version")
 
+# https://registry.bazel.build/modules/eigen (DROID-SLAM and lietorch kernels)
+bazel_dep(name = "eigen", version = "3.4.1.bcr.1")
+
 #------------- Testing dependencies -----------------
 
 #------------- Documentation dependencies -----------

@@ -1,0 +1,37 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("//:bzl/torch_extension.bzl", "torch_cuda_extension")
+
+# DROID-SLAM's kernels: dense bundle adjustment, correlation volumes and
+# depth filtering (upstream setup.py, CUDAExtension "droid_backends").
+torch_cuda_extension(
+    name = "_droid_backends",
+    srcs = ["droid.cpp"],
+    copts = ["-O3"],
+    cuda_srcs = [
+        "altcorr_kernel.cu",
+        "correlation_kernels.cu",
+        "droid_kernels.cu",
+    ],
+    deps = ["@eigen"],
+)
+
+# `import droid_backends`
+py_library(
+    name = "droid_backends",
+    srcs = ["droid_backends.py"],
+    data = [":_droid_backends.so"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [requirement("torch")],
+)
+
+# Make the files available to doxygen
+filegroup(
+    name = "sources",
+    srcs = glob([
+        "*.cpp",
+        "*.cu",
+    ]),
+    visibility = ["//visibility:public"],
+)

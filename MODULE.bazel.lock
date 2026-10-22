@@ -63,6 +63,8 @@
     "https://bcr.bazel.build/modules/buildifier_prebuilt/6.1.2/source.json": "19fb45ed3f0d55cbff94e402c39512940833ae3a68f9cbfd9518a1926b609c7c",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/MODULE.bazel": "2e8dd40ede9c454042645fd8d8d0cd1527966aa5c919de86661e62953cd73d84",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
+    "https://bcr.bazel.build/modules/eigen/3.4.1.bcr.1/MODULE.bazel": "c5e3109142de16ef5b2eb046ba657dd3b7f0fa282b5ac8858b6c3e6a791650bc",
+    "https://bcr.bazel.build/modules/eigen/3.4.1.bcr.1/source.json": "5652547f7d8b482dfa93815df60abe1e92c11d39046bf280ede36cc8d6fbf018",
     "https://bcr.bazel.build/modules/gazelle/0.27.0/MODULE.bazel": "3446abd608295de6d90b4a8a118ed64a9ce11dcb3dda2dc3290a22056bd20996",
     "https://bcr.bazel.build/modules/gazelle/0.30.0/MODULE.bazel": "f888a1effe338491f35f0e0e85003b47bb9d8295ccba73c37e07702d8d31c65b",
     "https://bcr.bazel.build/modules/gazelle/0.32.0/MODULE.bazel": "b499f58a5d0d3537f3cf5b76d8ada18242f64ec474d8391247438bf04f58c7b8",
@@ -1049,7 +1051,7 @@
     "@@toolchains_llvm+//toolchain/extensions:llvm.bzl%llvm": {
       "general": {
         "bzlTransitiveDigest": "miE+G1r8txiL9GGIOFLiY+RyielXfNO9OiFlFw+NE+U=",
-        "usagesDigest": "Jm+RO2cNxLubnRsMMTM8SXrbypdH0iOX19BOj47PRTc=",
+        "usagesDigest": "80fcdTcf+uRHZw9tQGnXmFgFO4AqB6I9etDq98GFb0Y=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1116,7 +1118,7 @@
               "opt_compile_flags": {},
               "opt_link_flags": {},
               "stdlib": {
-                "linux-x86_64": "stdc++",
+                "linux-x86_64": "dynamic-stdc++",
                 "linux-aarch64": "stdc++"
               },
               "target_settings": {},

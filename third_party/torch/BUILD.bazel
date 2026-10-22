@@ -1,0 +1,17 @@
+load("//:bzl/torch.bzl", "torch_cc_library")
+
+# The C++/CUDA API of the locked PyTorch wheel (see requirements_lock.txt), as
+# used by torch.utils.cpp_extension.CUDAExtension.
+torch_cc_library(
+    name = "torch",
+    libs = [
+        "c10",
+        "c10_cuda",
+        "torch",
+        "torch_cpu",
+        "torch_cuda",
+        "torch_python",
+    ],
+    torch = "@pypi//torch:pkg",
+    visibility = ["//visibility:public"],
+)

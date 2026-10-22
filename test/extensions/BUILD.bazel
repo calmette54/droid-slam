@@ -1,0 +1,15 @@
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+py_test(
+    name = "import_test",
+    size = "small",
+    srcs = ["import_test.py"],
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "//src:droid_backends",
+        requirement("numpy"),
+        requirement("pytest"),
+        requirement("torch"),
+    ],
+)

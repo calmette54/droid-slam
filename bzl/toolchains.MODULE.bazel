@@ -66,8 +66,11 @@ llvm.toolchain(
             "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.6/clang+llvm-19.1.6-aarch64-linux-gnu.tar.xz",
         ],
     },
+    # Dynamic libstdc++ (like torch.utils.cpp_extension): the PyTorch
+    # extensions share C++ objects and exceptions with the torch wheel, which
+    # links libstdc++.so.6.
     stdlib = {
-        "linux-x86_64": "stdc++",
+        "linux-x86_64": "dynamic-stdc++",
         "linux-aarch64": "stdc++",
     },
     # Keyed by target OS-arch pair; "" applies to all targets.

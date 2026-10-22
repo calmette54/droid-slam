@@ -5,6 +5,8 @@ ruff_test(
     name = "ruff_test",
     srcs = [
         "//integration:standalone_image_test",
+        "//src:droid_backends",
+        "//test/extensions:import_test",
         "//tools:cuda_check",
     ],
 )
