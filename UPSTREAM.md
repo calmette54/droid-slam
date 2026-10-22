@@ -26,7 +26,11 @@ The upstream shell scripts in `tools/` (`download_*.sh`, `evaluate_*.sh`,
 `validate_tartanair.sh`) are kept for reference but do not work here: they call
 `python evaluation_scripts/...`, which lacks the Bazel-built extensions. Use
 `//tools:download_dataset` and `//benchmark:accuracy`, which have the same
-sequence lists, URLs and arguments (`tools/datasets.py`).
+sequence lists, URLs and arguments (`tools/datasets.py`). One exception:
+EuRoC's upstream URLs (`robotics.ethz.ch/~asl-datasets`) are offline. The
+dataset is now on the ETH Research Collection (doi:10.3929/ethz-b-000690084),
+as one zip per room, and `download_dataset` fetches a single sequence's zip
+from it with HTTP range requests.
 
 These paths are excluded from the formatters and linters so that they stay
 diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).

@@ -10,15 +10,18 @@ Downloads resume after an interruption. A finished archive leaves a
 
 import argparse
 import http.client
+import io
 import os
 import pathlib
 import shutil
+import struct
 import sys
 import tarfile
 import time
 import urllib.error
 import urllib.request
 import zipfile
+import zlib
 
 from tools import datasets
 
@@ -27,19 +30,31 @@ USER_AGENT = "Wget/1.21 (droid-slam download_dataset)"
 RETRIES = 5
 
 
-def fetch_once(url: str, out: pathlib.Path) -> None:
-    """Downloads url to out, resuming a partial file."""
+def _request(url: str, first: int | None = None, last: int | None = None):
+    headers = {"User-Agent": USER_AGENT}
+    if first is not None:
+        headers["Range"] = f"bytes={first}-{'' if last is None else last}"
+    # Fixed http(s) dataset URLs from tools/datasets.py.
+    return urllib.request.urlopen(urllib.request.Request(url, headers=headers))  # noqa: S310
+
+
+def fetch_once(url: str, out: pathlib.Path, start: int = 0, length: int | None = None) -> None:
+    """Downloads url (or `length` bytes from `start`) to out, resuming a partial file."""
     done = out.stat().st_size if out.exists() else 0
-    headers = {"User-Agent": USER_AGENT} | ({"Range": f"bytes={done}-"} if done else {})
+    windowed = start or length is not None
+    if length is not None and done >= length:
+        return
+    last = None if length is None else start + length - 1
     try:
-        # Fixed http(s) dataset URLs from tools/datasets.py.
-        response = urllib.request.urlopen(urllib.request.Request(url, headers=headers))  # noqa: S310
+        response = _request(url, start + done, last) if done or windowed else _request(url)
     except urllib.error.HTTPError as error:
         if error.code == 416:  # the partial file is already complete
             return
         raise
     with response:
         mode = "ab" if response.status == 206 else "wb"
+        if windowed and response.status != 206:
+            raise ConnectionError(f"{url}: the server ignores range requests")
         written = done if mode == "ab" else 0
         total = int(response.headers.get("Content-Length", 0)) + written
         with out.open(mode) as f:
@@ -53,10 +68,10 @@ def fetch_once(url: str, out: pathlib.Path) -> None:
         raise ConnectionError(f"{url}: got {written} of {total} bytes")
 
 
-def fetch(url: str, out: pathlib.Path) -> None:
+def fetch(url: str, out: pathlib.Path, start: int = 0, length: int | None = None) -> None:
     for attempt in range(1, RETRIES + 1):
         try:
-            fetch_once(url, out)
+            fetch_once(url, out, start, length)
             return
         except (
             ConnectionError,
@@ -68,6 +83,75 @@ def fetch(url: str, out: pathlib.Path) -> None:
                 raise
             print(f"  {error}; retrying ({attempt}/{RETRIES - 1})")
             time.sleep(2**attempt)
+
+
+class RemoteFile(io.RawIOBase):
+    """A read-only, seekable view of a URL through HTTP range requests."""
+
+    def __init__(self, url: str) -> None:
+        with _request(url, 0, 0) as response:
+            self.size = int(response.headers["Content-Range"].rpartition("/")[2])
+            self.url = response.url
+        self.pos = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def tell(self) -> int:
+        return self.pos
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        self.pos = {io.SEEK_SET: 0, io.SEEK_CUR: self.pos, io.SEEK_END: self.size}[whence] + offset
+        return self.pos
+
+    def read(self, size: int = -1) -> bytes:
+        size = self.size - self.pos if size < 0 else min(size, self.size - self.pos)
+        if size <= 0:
+            return b""
+        with _request(self.url, self.pos, self.pos + size - 1) as response:
+            data = response.read()
+        self.pos += len(data)
+        return data
+
+
+def fetch_member(url: str, member: str, out: pathlib.Path) -> None:
+    """Downloads one deflated or stored file of the remote zip at url to out."""
+    remote = RemoteFile(url)
+    info = zipfile.ZipFile(remote).getinfo(member)
+    remote.seek(info.header_offset)
+    header = remote.read(30)  # the local file header, then its name and extra field
+    name_length, extra_length = struct.unpack("<HH", header[26:30])
+    start = info.header_offset + 30 + name_length + extra_length
+
+    raw = out.with_suffix(".raw")
+    fetch(remote.url, raw, start, info.compress_size)
+    try:
+        crc = inflate_to(raw, out, deflated=info.compress_type == zipfile.ZIP_DEFLATED)
+    except zlib.error:
+        crc = None
+    raw.unlink()
+    if crc != info.CRC:
+        out.unlink()
+        raise ValueError(f"{member}: CRC-32 mismatch, downloaded data removed")
+
+
+def inflate_to(raw: pathlib.Path, out: pathlib.Path, deflated: bool) -> int:
+    """Writes the (raw deflate) data of raw to out and returns its CRC-32."""
+    crc = 0
+    inflate = zlib.decompressobj(-zlib.MAX_WBITS) if deflated else None
+    with raw.open("rb") as src, out.open("wb") as dst:
+        while chunk := src.read(1 << 20):
+            data = inflate.decompress(chunk) if inflate else chunk
+            crc = zlib.crc32(data, crc)
+            dst.write(data)
+        if inflate:
+            data = inflate.flush()
+            crc = zlib.crc32(data, crc)
+            dst.write(data)
+    return crc
 
 
 def extract(archive: pathlib.Path, into: pathlib.Path) -> None:
@@ -92,6 +176,8 @@ def download(archive: datasets.Archive, root: pathlib.Path) -> None:
         import gdown  # noqa: PLC0415 (only TartanAir is on Google Drive)
 
         gdown.download(id=archive.gdrive_id, output=str(part), quiet=False, resume=True)
+    elif archive.member:
+        fetch_member(archive.url, archive.member, part)
     else:
         fetch(archive.url, part)
     print(f"{archive.name}: extracting")

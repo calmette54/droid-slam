@@ -104,11 +104,28 @@ class Archive:
     url: str = ""
     gdrive_id: str = ""
     into: str = "."
+    # A file inside the zip at `url`, fetched alone with HTTP range requests.
+    member: str = ""
 
 
-def _euroc_url(seq: str) -> str:
-    room = {"MH": "machine_hall", "V1": "vicon_room1", "V2": "vicon_room2"}[seq[:2]]
-    return f"http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/{room}/{seq}/{seq}.zip"
+# EuRoC moved from robotics.ethz.ch/~asl-datasets (upstream's URLs, offline) to
+# the ETH Research Collection (doi:10.3929/ethz-b-000690084), one zip per room
+# that holds the original per-sequence zips.
+_EUROC_ROOMS = {
+    "MH": ("machine_hall", "7b2419c1-62b5-4714-b7f8-485e5fe3e5fe"),
+    "V1": ("vicon_room1", "02ecda9a-298f-498b-970c-b7c44334d880"),
+    "V2": ("vicon_room2", "ea12bc01-3677-4b4c-853d-87c7870b8c44"),
+}
+
+
+def _euroc(seq: str, into: str) -> Archive:
+    room, bitstream = _EUROC_ROOMS[seq[:2]]
+    return Archive(
+        seq,
+        f"https://www.research-collection.ethz.ch/server/api/core/bitstreams/{bitstream}/content",
+        into=into,
+        member=f"{room}/{seq}/{seq}.zip",
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -132,13 +149,13 @@ DATASETS = {
                 "rgbd_dataset_freiburg3_cabinet",
                 "https://cvg.cit.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_cabinet.tgz",
             ),
-            Archive("MH_03_medium", _euroc_url("MH_03_medium")),
+            _euroc("MH_03_medium", into="."),
         ),
         min_gpu_gb=0,
     ),
     "euroc": Dataset(
         root="datasets/EuRoC",
-        archives=tuple(Archive(seq, _euroc_url(seq), into=seq) for seq in EUROC),
+        archives=tuple(_euroc(seq, into=seq) for seq in EUROC),
         min_gpu_gb=11,
     ),
     "tum": Dataset(
