@@ -10,8 +10,9 @@ use the `bazel-starter` plugin skills (`project-standardize`, `bazel-workspace`,
 
 ## Setup
 
-- Enter the dev environment with `devenv shell` (bazelisk, commitizen, jq,
-  crane and the git hooks).
+- Enter the dev environment with `devenv shell` (bazelisk, uv, commitizen,
+  jq, crane, wget and the git hooks; scripts `droid-run`, `gpu-check`,
+  `lock-requirements`). The NVIDIA driver is the only host dependency.
 - Once per clone: `bazelisk run @tweag-credential-helper//installer`.
 - Always run `bazelisk`, never `bazel`: `.bazeliskrc` selects the Aspect CLI,
   which runs the Bazel version from `.bazelversion`.
@@ -19,36 +20,45 @@ use the `bazel-starter` plugin skills (`project-standardize`, `bazel-workspace`,
 ## Commands
 
 ```bash
-bazelisk build //...                          # build everything
-bazelisk test //...                           # unit tests, lint tests, integration
-bazelisk run //standalone:hello-world -- Alice fr
+bazelisk build //...                          # build everything (no GPU needed)
+bazelisk test //...                           # CPU unit tests and lint tests
+bazelisk test --config=gpu //...              # tests tagged requires-gpu
+bazelisk run //tools:cuda_check               # PyTorch / CUDA / GPU report
+droid-run //:demo --imagedir=... --calib=calib/eth.txt   # run from the cwd
 bazelisk run //:format                        # clang-format and ruff
 bazelisk lint //...                           # lint results with fixes
-bazelisk run //:requirements.update           # re-lock after editing requirements.in
+lock-requirements                             # re-lock after editing requirements.in
 bazelisk build //documentation:docs           # Doxygen HTML in bazel-bin/documentation/html
 ```
 
-`//integration:standalone_image_test` needs a Docker-compatible daemon. For
+`//integration:standalone_image_test` (manual, ~9 GB image) needs a
+Docker-compatible daemon. For
 rootless Podman, export `DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock`
 and `TESTCONTAINERS_RYUK_DISABLED=true`. See `integration/BUILD.bazel`.
 
 Release builds stamp the version from `.release-please-manifest.json`:
 
 ```bash
-bazelisk build //standalone:tar --config=x86_64 --revision_mode=RELEASE --release_version=X.Y.Z
-bazelisk run //standalone:push_image --revision_mode=RELEASE
+bazelisk build //standalone:tar --config=release --config=x86_64 --revision_mode=RELEASE --release_version=X.Y.Z
+bazelisk run --config=release //standalone:push_image --revision_mode=RELEASE
 ```
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `lib/greeter/` | example library (`py_library`, `import greeter`) |
-| `test/greeter/`, `test/lint/` | pytest unit tests, ruff `lint_test` |
-| `requirements.in`, `requirements_lock.txt` | PyPI dependencies (hub `@pypi`) |
-| `standalone/` | `hello-world` CLI, release tarball, multi-arch OCI image |
+| `droid_slam/`, `src/`, `demo.py`, `train.py`, `view_reconstruction.py`, `evaluation_scripts/`, `tools/*.sh`, `calib/`, `data/` | upstream DROID-SLAM, unchanged (`UPSTREAM.md`) |
+| `src/BUILD.bazel` | `droid_backends` CUDA extension (`//src:droid_backends`) |
+| `third_party/lietorch/` | BUILD file for `@lietorch` (`http_archive`) |
+| `third_party/torch_scatter/` | pure PyTorch `scatter_sum` / `scatter_mean` |
+| `third_party/tartanair_tools/` | upstream's vendored TartanAir evaluation |
+| `third_party/torch/`, `bzl/torch.bzl`, `bzl/torch_extension.bzl` | C++ API of the torch wheel, `torch_cuda_extension` macro |
+| `test/` | `extensions`, `lietorch`, `torch_scatter`, `droid_slam` (CPU); `gpu`, `cuda`, `lietorch:lietorch_cuda_test` (`requires-gpu`); `lint` |
+| `tools/` | `cuda_check`, `download_model` |
+| `requirements.in`, `requirements_lock.txt` | PyPI + PyTorch cu128 dependencies (hub `@pypi`, uv lock) |
+| `standalone/` | release tarball, OCI image (`/demo` entrypoint) |
 | `integration/` | Python testcontainers test of the image |
-| `documentation/` | Doxygen + doxygen-awesome |
+| `documentation/` | Doxygen + doxygen-awesome, upstream README |
 | `bzl/` | flags (`defs.bzl`), packaging names, platforms, toolchain, format and lint setup, project parameters (`variables.bzl`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
 
@@ -62,6 +72,30 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
   `bzl/variables.bzl`, not in BUILD files.
 - Toolchain-wide settings live in `MODULE.bazel`, `bzl/toolchains.MODULE.bazel`
   and `.bazelrc`. Pin every dependency (BCR first; `sha256` on `http_archive`).
+
+- Do not reformat or lint the upstream code: it is excluded in `.ruff.toml`,
+  `src/.clang-format` and `devenv.nix` so that it stays diffable. Record any
+  change to it in `UPSTREAM.md` ("Local patches").
+- New Python files: add their targets to `//test/lint:ruff_test`. Tests that
+  need a GPU get the `requires-gpu` tag; never skip a test at run time.
+
+## Deviations from the template
+
+Keep these when upgrading with `project-standardize`:
+
+- No BuildBuddy RBE (`WORKSPACE.bzlmod`, `buildbuddy.yaml`, `--enable_workspace`
+  removed); CI is `.github/workflows/ci.yml` on GitHub-hosted runners.
+- x86_64 only (CUDA redistributables, PyTorch CUDA wheels): no aarch64 image
+  or tarball.
+- CUDA: rules_cuda 0.3.0 (hermetic 12.8 redist) with nvcc and the LLVM
+  toolchain as host compiler; rules_cc 0.2.14; `--config=gpu`,
+  `--config=release` (CUDA archs) in `.bazelrc`.
+- `bzl/toolchains.MODULE.bazel`: x86_64 links libstdc++ dynamically
+  (`dynamic-stdc++`), as the torch wheel does.
+- Python dependencies are locked with uv (`lock-requirements`), not
+  `compile_pip_requirements`, because of the PyTorch index.
+- The release tarball has no runfiles (the runtime exceeds GitHub's 2 GB
+  asset limit); the image and the image test are `manual`.
 
 ## CI/CD
 

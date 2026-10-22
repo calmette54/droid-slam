@@ -6,7 +6,10 @@ doxygen(
     name = "docs",
     srcs = [
         "README.md",
+        "UPSTREAM_README.md",
         ":header",
+        "//src:sources",
+        "//third_party/torch_scatter:sources",
     ] + glob(["_static/*"]),
     aliases = [
         "license=@par License:^^",

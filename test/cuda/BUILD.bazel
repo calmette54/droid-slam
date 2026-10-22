@@ -14,6 +14,7 @@ cc_test(
     srcs = ["saxpy_test.cc"],
     # `bazelisk build //...` (CI) still compiles and links it without a GPU.
     tags = ["requires-gpu"],
+    visibility = ["//test/lint:__pkg__"],
     deps = [":saxpy"],
 )
 
