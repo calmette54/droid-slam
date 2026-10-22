@@ -66,10 +66,7 @@ oci_image(
 multi_arch(
     name = "images",
     image = ":image",
-    platforms = [
-        "//bzl/platforms:linux-x86_64",
-        "//bzl/platforms:linux-aarch64",
-    ],
+    platforms = ["//bzl/platforms:linux-x86_64"],
 )
 
 oci_image_index(

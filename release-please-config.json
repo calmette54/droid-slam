@@ -2,14 +2,6 @@
   "release-type": "bazel",
   "include-component-in-tag": false,
   "packages": {
-    ".": {
-      "extra-files": [
-        {
-          "type": "json",
-          "path": "claude-plugin/.claude-plugin/plugin.json",
-          "jsonpath": "$.version"
-        }
-      ]
-    }
+    ".": {}
   }
 }

@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free disk space
+        # PyTorch + the CUDA wheels need ~10 GB unpacked.
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bazelisk
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - name: Authenticate Bazel
+        run: |
+          CREDENTIAL_HELPER_PATH=$(bazelisk run @tweag-credential-helper//installer)
+          chmod +x "$CREDENTIAL_HELPER_PATH"
+
+      - name: Build
+        # The CUDA code is compiled with the hermetic toolchain: no GPU needed.
+        run: bazelisk build --config=ci //...
+
+      - name: Test
+        # Tests tagged requires-gpu / requires-docker are filtered by --config=ci.
+        run: bazelisk test --config=ci //...
+
+      - name: Check formatting
+        run: bazelisk run //bzl/format:format.check

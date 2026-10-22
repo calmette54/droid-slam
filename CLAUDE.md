@@ -65,8 +65,9 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 
 ## CI/CD
 
-- **BuildBuddy** (`buildbuddy.yaml`) runs the tests on pushes and PRs with
-  `--config=ci` (RBE). Tests tagged `requires-docker` are skipped there.
+- **GitHub Actions** (`.github/workflows/ci.yml`) builds and tests on pushes
+  and PRs with `--config=ci`. The runners have no GPU: tests tagged
+  `requires-gpu` or `requires-docker` are skipped there.
 - **GitHub Actions** (`.github/workflows/release-please.yml`) runs on `main`:
   it opens the release PR, and when that PR is merged it attaches the
   binaries, pushes the image and publishes the docs to GitHub Pages.
