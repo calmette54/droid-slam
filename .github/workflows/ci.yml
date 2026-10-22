@@ -23,6 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install system libraries
+        # open3d (upstream's visualizer) loads libGL at import time; it is not
+        # part of the wheel. Same requirement on any host running //:demo.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libegl1 libgomp1
+
       - name: Install Bazelisk
         uses: bazel-contrib/setup-bazel@0.14.0
         with:

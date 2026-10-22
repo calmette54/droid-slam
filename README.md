@@ -36,7 +36,9 @@ droid-run //:demo --imagedir=data/sfm_bench/rgb --calib=calib/eth.txt
 command lines work as documented (`demo.py`, `train.py`,
 `view_reconstruction.py` are `//:demo`, `//:train`, `//:view_reconstruction`;
 `evaluation_scripts/test_*.py` are `//evaluation_scripts:test_*`).
-The visualizer needs a display; use `--disable_vis` on a headless machine.
+The visualizer needs a display and the system OpenGL library (`libGL.so.1`,
+Ubuntu package `libgl1`), which open3d loads on import; use `--disable_vis`
+on a headless machine.
 
 Or with the container image (NVIDIA container toolkit):
 
