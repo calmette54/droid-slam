@@ -1,0 +1,5 @@
+filegroup(
+    name = "euroc_groundtruth",
+    srcs = glob(["euroc_groundtruth/*.txt"]),
+    visibility = ["//visibility:public"],
+)

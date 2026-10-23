@@ -51,6 +51,7 @@ build --flag_alias=commit_sha=//:commit_sha
 ###############################################################################
 common:ci --color=yes --curses=no
 test:ci --test_tag_filters=-requires-gpu,-requires-docker
+test:ci --test_output=errors
 
 ###############################################################################
 # Code coverage
