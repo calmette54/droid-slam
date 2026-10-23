@@ -94,8 +94,10 @@ def fetch(url: str, out: pathlib.Path, start: int = 0, length: int | None = None
         ) as error:
             if attempt == RETRIES:
                 raise
-            print(f"  {error}; retrying ({attempt}/{RETRIES - 1})")
-            time.sleep(2**attempt)
+            # The ETH3D server refuses TLS handshakes for a while after a burst.
+            wait = 15 * 2**attempt
+            print(f"  {error}; retrying in {wait} s ({attempt}/{RETRIES - 1})")
+            time.sleep(wait)
 
 
 class RemoteFile(io.RawIOBase):
