@@ -86,7 +86,17 @@ def _archives(tmp_path: pathlib.Path) -> pathlib.Path:
 class RangeHandler(http.server.SimpleHTTPRequestHandler):
     """SimpleHTTPRequestHandler plus single `Range: bytes=a-b` requests."""
 
+    # Requests to answer with 429 Too Many Requests before serving again.
+    rate_limited = 0
+
     def do_GET(self):  # noqa: N802 (http.server API)
+        if RangeHandler.rate_limited:
+            RangeHandler.rate_limited -= 1
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return None
         ranged = self.headers.get("Range", "").removeprefix("bytes=")
         if not ranged:
             return super().do_GET()
@@ -139,6 +149,16 @@ def test_member_of_remote_zip(server, tmp_path):
     download_dataset.download(archive, root)
     assert (root / "seq/mav0/cam0/data/0.png").read_bytes() == b"x" * 4096
     assert not list(root.glob(".seq.*[!e]"))  # only the .done marker is left
+
+
+def test_waits_out_rate_limit(server, tmp_path, monkeypatch):
+    waits = []
+    monkeypatch.setattr(download_dataset.time, "sleep", waits.append)
+    monkeypatch.setattr(RangeHandler, "rate_limited", 2)
+    archive = datasets.Archive("seq", f"{server}/room.zip", into="seq", member="room/seq/seq.zip")
+    download_dataset.download(archive, tmp_path / "datasets")
+    assert waits == [1, 1]
+    assert (tmp_path / "datasets/seq/mav0/cam0/data/0.png").exists()
 
 
 def test_member_resumes_and_checks_crc(server, tmp_path):

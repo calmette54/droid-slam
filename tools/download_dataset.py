@@ -28,14 +28,27 @@ from tools import datasets
 # Some dataset servers close the connection on Python's default User-Agent.
 USER_AGENT = "Wget/1.21 (droid-slam download_dataset)"
 RETRIES = 5
+# Too Many Requests, Service Unavailable: wait and try again.
+RATE_LIMITED = (429, 503)
 
 
 def _request(url: str, first: int | None = None, last: int | None = None):
     headers = {"User-Agent": USER_AGENT}
     if first is not None:
         headers["Range"] = f"bytes={first}-{'' if last is None else last}"
-    # Fixed http(s) dataset URLs from tools/datasets.py.
-    return urllib.request.urlopen(urllib.request.Request(url, headers=headers))  # noqa: S310
+    for attempt in range(1, RETRIES + 1):
+        try:
+            # Fixed http(s) dataset URLs from tools/datasets.py.
+            return urllib.request.urlopen(urllib.request.Request(url, headers=headers))  # noqa: S310
+        except urllib.error.HTTPError as error:
+            # The ETH Research Collection rate-limits bursts of range requests.
+            if error.code not in RATE_LIMITED or attempt == RETRIES:
+                raise
+            retry_after = error.headers.get("Retry-After", "")
+            wait = int(retry_after) if retry_after.isdigit() else 30 * attempt
+            print(f"  HTTP {error.code}; retrying in {wait} s ({attempt}/{RETRIES - 1})")
+            time.sleep(wait)
+    raise AssertionError("unreachable")
 
 
 def fetch_once(url: str, out: pathlib.Path, start: int = 0, length: int | None = None) -> None:
