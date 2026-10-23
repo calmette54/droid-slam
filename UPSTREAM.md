@@ -22,6 +22,16 @@ The upstream code is licensed under the BSD 3-Clause License (`LICENSE`).
 `third_party/tartanair_tools`). The upstream README is in
 `documentation/UPSTREAM_README.md`.
 
+The upstream shell scripts in `tools/` (`download_*.sh`, `evaluate_*.sh`,
+`validate_tartanair.sh`) are kept for reference but do not work here: they call
+`python evaluation_scripts/...`, which lacks the Bazel-built extensions. Use
+`//tools:download_dataset` and `//benchmark:accuracy`, which have the same
+sequence lists, URLs and arguments (`tools/datasets.py`). One exception:
+EuRoC's upstream URLs (`robotics.ethz.ch/~asl-datasets`) are offline. The
+dataset is now on the ETH Research Collection (doi:10.3929/ethz-b-000690084),
+as one zip per room, and `download_dataset` fetches a single sequence's zip
+from it with HTTP range requests.
+
 These paths are excluded from the formatters and linters so that they stay
 diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 
@@ -44,6 +54,14 @@ diffable against upstream (`.ruff.toml`, `src/.clang-format`, `devenv.nix`).
 - `opencv-python-headless` instead of `opencv-python`.
 
 ## Local patches
+
+- lietorch (`third_party/lietorch/internal_cpu_kernels.patch`, applied by the
+  `http_archive`): the CPU kernel templates in `lietorch_cpu.cpp` get internal
+  linkage. They have the same names and signatures as the CUDA kernels in
+  `lietorch_gpu.cu`, so the linker merged the weak template instantiations
+  and, in an unoptimized build, the CUDA path called the CPU loops with device
+  pointers (segmentation fault in `SO3 * SO3` on the GPU). Upstream's `-O2`
+  setuptools build hides it by inlining.
 
 - `demo.py`: `show_image` ignores the `cv2.error` raised by
   `opencv-python-headless` (no GUI); use `--disable_vis` to skip it.

@@ -19,6 +19,8 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 http_archive(
     name = "lietorch",
     build_file = "//third_party/lietorch:lietorch.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//third_party/lietorch:internal_cpu_kernels.patch"],
     sha256 = "3278df158ff2749c47485cac19da2aeda1cc5efc08fa3af94ce7911ea6bb90ea",
     strip_prefix = "lietorch-7f687644fcea81ab337831749445224503c1290d",
     urls = ["https://github.com/princeton-vl/lietorch/archive/7f687644fcea81ab337831749445224503c1290d.tar.gz"],

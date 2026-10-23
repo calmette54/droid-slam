@@ -53,8 +53,9 @@ bazelisk run --config=release //standalone:push_image --revision_mode=RELEASE
 | `third_party/torch_scatter/` | pure PyTorch `scatter_sum` / `scatter_mean` |
 | `third_party/tartanair_tools/` | upstream's vendored TartanAir evaluation |
 | `third_party/torch/`, `bzl/torch.bzl`, `bzl/torch_extension.bzl` | C++ API of the torch wheel, `torch_cuda_extension` macro |
-| `test/` | `extensions`, `lietorch`, `torch_scatter`, `droid_slam` (CPU); `gpu`, `cuda`, `lietorch:lietorch_cuda_test` (`requires-gpu`); `lint` |
-| `tools/` | `cuda_check`, `download_model` (weights also as `@droid_weights//file`, release `weights-v1`) |
+| `test/` | `extensions`, `lietorch`, `torch_scatter`, `droid_slam`, `benchmark` (CPU); `gpu` (incl. `euroc_mh03_ate_test`), `cuda`, `lietorch:lietorch_cuda_test` (`requires-gpu`); `lint` |
+| `tools/` | `cuda_check`, `download_model` (weights also as `@droid_weights//file`, release `weights-v1`), `download_dataset` (`datasets.py`: sequences and URLs of the upstream `*.sh`) |
+| `benchmark/` | `//benchmark:accuracy`: upstream evaluation scripts per sequence vs. the paper's ATE (`reference.json`) |
 | `requirements.in`, `requirements_lock.txt` | PyPI + PyTorch cu128 dependencies (hub `@pypi`, uv lock) |
 | `standalone/` | release tarball, OCI image (`/demo` entrypoint) |
 | `integration/` | Python testcontainers test of the image |

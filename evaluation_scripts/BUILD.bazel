@@ -7,6 +7,10 @@ load("@rules_python//python:py_binary.bzl", "py_binary")
         name = name,
         srcs = [name + ".py"],
         data = ["//:calib"] + data,
+        visibility = [
+            "//benchmark:__pkg__",
+            "//test/gpu:__pkg__",
+        ],
         deps = [
             "//droid_slam",
             requirement("evo"),

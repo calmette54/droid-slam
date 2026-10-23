@@ -1,0 +1,22 @@
+--- a/lietorch/src/lietorch_cpu.cpp
++++ b/lietorch/src/lietorch_cpu.cpp
+@@ -11,6 +11,10 @@
+ #include "se3.h"
+ #include "sim3.h"
+ 
++// The CPU kernels have the same names and signatures as the CUDA kernels in
++// lietorch_gpu.cu. Internal linkage keeps the linker from merging the two
++// template instantiations (droid-slam Bazel build, see UPSTREAM.md).
++namespace {
+ 
+ template <typename Group, typename scalar_t>
+ void exp_forward_kernel(const scalar_t* a_ptr, scalar_t* X_ptr, int batch_size) {
+@@ -351,6 +355,8 @@
+     });
+ }
+ 
++}  // namespace
++
+ // unary operations
+ 
+ torch::Tensor exp_forward_cpu(int group_id, torch::Tensor a) {

@@ -17,6 +17,8 @@
     "^data/"
     "^third_party/tartanair_tools/"
   ];
+  # Patches must keep their whitespace exactly (blank context lines are " ").
+  patches = ["\\.patch$"];
 in {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
@@ -146,7 +148,7 @@ in {
 
     end-of-file-fixer = {
       enable = true;
-      excludes = upstream;
+      excludes = upstream ++ patches;
       description = "Ensures that the file is either empty, or ends with a single newline";
     };
 
@@ -168,7 +170,7 @@ in {
 
     mixed-line-endings = {
       enable = true;
-      excludes = upstream;
+      excludes = upstream ++ patches;
       description = "Resolve mixed line endings";
     };
 
@@ -192,7 +194,7 @@ in {
 
     trim-trailing-whitespace = {
       enable = true;
-      excludes = upstream;
+      excludes = upstream ++ patches;
       description = "Trim trailing whitespace";
     };
 

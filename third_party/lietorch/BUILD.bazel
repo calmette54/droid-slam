@@ -1,1 +1,4 @@
-exports_files(["lietorch.BUILD"])
+exports_files([
+    "internal_cpu_kernels.patch",
+    "lietorch.BUILD",
+])
