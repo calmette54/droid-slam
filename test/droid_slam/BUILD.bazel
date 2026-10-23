@@ -5,9 +5,12 @@ py_test(
     name = "droid_slam_test",
     size = "small",
     srcs = ["droid_slam_test.py"],
+    data = ["@droid_weights//file"],
+    env = {"DROID_WEIGHTS": "$(rlocationpath @droid_weights//file)"},
     visibility = ["//test/lint:__pkg__"],
     deps = [
         "//droid_slam",
+        "@rules_python//python/runfiles",
         requirement("pytest"),
     ],
 )

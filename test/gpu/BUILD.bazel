@@ -15,9 +15,10 @@ py_test(
     ],
 )
 
-# End to end: DROID_WEIGHTS (droid.pth, //tools:download_model) and
-# DROID_IMAGEDIR (e.g. data/sfm_bench/rgb from tools/download_sample_data.sh)
-# must be absolute paths; DROID_CALIB is a file in calib/ (default eth.txt).
+# End to end: DROID_IMAGEDIR (e.g. data/sfm_bench/rgb from
+# tools/download_sample_data.sh) must be an absolute path; DROID_CALIB is a file
+# in calib/ (default eth.txt). The weights are @droid_weights unless DROID_WEIGHTS
+# (an absolute path) overrides them.
 py_test(
     name = "demo_smoke_test",
     size = "large",
@@ -25,7 +26,9 @@ py_test(
     data = [
         "//:calib",
         "//:demo",
+        "@droid_weights//file",
     ],
+    env = {"DROID_DEFAULT_WEIGHTS": "$(rlocationpath @droid_weights//file)"},
     env_inherit = [
         "DROID_CALIB",
         "DROID_IMAGEDIR",
