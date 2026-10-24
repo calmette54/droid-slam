@@ -18,7 +18,7 @@
     "mean_ate": 0.022
   },
   "euroc_stereo": {
-    "source": "Table 5 (appendix), stereo EuRoC; transcribed from a summary of the paper, verify against the PDF",
+    "source": "Table 5 (appendix), stereo EuRoC",
     "ate": {
       "MH_01_easy": 0.015,
       "MH_02_easy": 0.013,
@@ -35,7 +35,7 @@
     "mean_ate": 0.024
   },
   "tum": {
-    "source": "Table 4, TUM-RGBD fr1; transcribed from a summary of the paper, verify against the PDF",
+    "source": "Table 4, TUM-RGBD fr1",
     "ate": {
       "rgbd_dataset_freiburg1_360": 0.111,
       "rgbd_dataset_freiburg1_desk": 0.018,
@@ -67,6 +67,8 @@
     "source": "The paper reports no per-scene stereo ATE (Table 2 uses the competition's relative pose error)"
   },
   "eth3d": {
-    "source": "The paper reports the ETH3D-SLAM leaderboard AUC over all scenes (Figure 4), not per-scene ATE; compare auc_2cm/auc_8cm by hand"
+    "source": "Figure 4 (left): ETH3D-SLAM RGB-D leaderboard AUC, train 340.42 and test 207.79; no per-scene ATE. The train AUC compares with auc_8cm",
+    "auc_train": 340.42,
+    "auc_test": 207.79
   }
 }

@@ -48,10 +48,22 @@ def test_parse_tartanair():
 
 
 def test_memory_args():
-    assert accuracy.memory_args("auto", 5.7) == accuracy.LOW_MEMORY_ARGS
-    assert accuracy.memory_args("auto", 24.0) == []
-    assert accuracy.memory_args("upstream", 5.7) == []
-    assert accuracy.memory_args("low", 24.0) == accuracy.LOW_MEMORY_ARGS
+    euroc, tum = accuracy.SUITES["euroc"], accuracy.SUITES["tum"]
+    assert accuracy.memory_args(euroc, "auto", 5.7) == [*accuracy.LOW_MEMORY_ARGS, "--buffer=384"]
+    assert accuracy.memory_args(tum, "auto", 5.7) == accuracy.LOW_MEMORY_ARGS
+    assert accuracy.memory_args(euroc, "auto", 24.0) == []
+    assert accuracy.memory_args(euroc, "upstream", 5.7) == []
+    assert accuracy.memory_args(tum, "low", 24.0) == accuracy.LOW_MEMORY_ARGS
+
+
+def test_fits():
+    suites = accuracy.SUITES
+    assert accuracy.fits(suites["eth3d"], "auto", 5.7)
+    assert not accuracy.fits(suites["eth3d"], "upstream", 5.7)
+    assert not accuracy.fits(suites["tartanair"], "auto", 5.7)
+    assert accuracy.fits(suites["tartanair"], "auto", 24.0)
+    # Above 11 GB auto keeps upstream's arguments, which need 24 GB for ETH3D.
+    assert not accuracy.fits(suites["eth3d"], "auto", 16.0)
 
 
 def test_check_against_paper():

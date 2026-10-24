@@ -32,6 +32,7 @@ from tools import datasets
 # --backend_nms=2 or 3) for GPUs below upstream's 11 GB. Its per-edge state
 # (up to 16 edges per keyframe) is what runs out of memory on a 6 GB GPU. On
 # EuRoC MH_03 with an RTX 3060 (6 GB) it gives ATE 0.0220 m (paper: 0.022).
+# Suites with a low_memory_buffer also get a smaller keyframe buffer.
 LOW_MEMORY_ARGS = ["--backend_thresh=20", "--backend_nms=3"]
 # Upstream: "EuRoC and TUM can be run on a 1080Ti" (11 GB).
 LOW_MEMORY_GB = 11
@@ -49,6 +50,11 @@ class Suite:
     args: object
     # The result line of the script.
     pattern: object = EVO_RMSE
+    # --buffer (keyframes) in low-memory mode; None keeps the script's default.
+    # The buffer is preallocated: at upstream's 512 or 1024 its features alone
+    # take 2-4 GB. It must hold every keyframe plus the 16 frames that the
+    # trajectory filler adds at the end, or the run fails with an IndexError.
+    low_memory_buffer: int | None = None
 
 
 def _tartanair(stereo: bool) -> Suite:
@@ -77,6 +83,9 @@ def _euroc(stereo: bool) -> Suite:
             f"--gt={runfiles.Rlocation(f'_main/data/euroc_groundtruth/{seq}.txt')}",
             *(["--stereo"] if stereo else []),
         ],
+        # V1_03_difficult and V2_02_medium have about 310 keyframes; at 512
+        # their global bundle adjustment runs out of memory on 6 GB.
+        low_memory_buffer=None if stereo else 384,
     )
 
 
@@ -94,16 +103,38 @@ SUITES = {
         script="test_eth3d",
         sequences=datasets.ETH3D,
         args=lambda root, seq, _: [f"--datapath={root / seq}"],
+        low_memory_buffer=384,
     ),
+    # TartanAir does not fit 6 GB: MH000 has more than 512 keyframes, and ME000
+    # runs out of memory with a 512 buffer.
     "tartanair": _tartanair(stereo=False),
     "tartanair_stereo": _tartanair(stereo=True),
 }
 
 
-def memory_args(memory: str, gpu_gb: float) -> list[str]:
-    """The extra arguments of --memory (auto: low below upstream's 11 GB)."""
-    low = memory == "low" or (memory == "auto" and gpu_gb < LOW_MEMORY_GB)
-    return LOW_MEMORY_ARGS if low else []
+def low_memory(memory: str, gpu_gb: float) -> bool:
+    """Whether --memory selects the low-memory arguments (auto: below 11 GB)."""
+    return memory == "low" or (memory == "auto" and gpu_gb < LOW_MEMORY_GB)
+
+
+def memory_args(suite: Suite, memory: str, gpu_gb: float) -> list[str]:
+    """The extra arguments of --memory for a suite."""
+    if not low_memory(memory, gpu_gb):
+        return []
+    buffer = [f"--buffer={suite.low_memory_buffer}"] if suite.low_memory_buffer else []
+    return LOW_MEMORY_ARGS + buffer
+
+
+def fits(suite: Suite, memory: str, gpu_gb: float) -> bool:
+    """Whether the suite is expected to fit the GPU with these arguments."""
+    min_gb = datasets.DATASETS[suite.dataset].min_gpu_gb
+    if gpu_gb >= min_gb:
+        return True
+    # The low-memory arguments cover upstream's 11 GB suites, and the 24 GB
+    # ones that have a smaller buffer.
+    return low_memory(memory, gpu_gb) and (
+        min_gb <= LOW_MEMORY_GB or suite.low_memory_buffer is not None
+    )
 
 
 def run_sequence(suite: Suite, seq: str, cmd: list[str], log: pathlib.Path) -> dict:
@@ -160,7 +191,7 @@ def main() -> int:
         "--memory",
         choices=["auto", "upstream", "low"],
         default="auto",
-        help=f"low: {' '.join(LOW_MEMORY_ARGS)} (auto: below {LOW_MEMORY_GB} GB)",
+        help=f"low: {' '.join(LOW_MEMORY_ARGS)}, smaller --buffer (auto: <{LOW_MEMORY_GB} GB)",
     )
     parser.add_argument("extra", nargs="*", help="after --: passed to every run")
     args = parser.parse_args()
@@ -178,15 +209,14 @@ def main() -> int:
         return 1
     gpu = torch.cuda.get_device_properties(0)
     gpu_gb = gpu.total_memory / 2**30
-    # The low-memory arguments cover upstream's 11 GB suites, not the 24 GB ones.
-    if gpu_gb < dataset.min_gpu_gb and dataset.min_gpu_gb > LOW_MEMORY_GB and not args.force:
+    if not fits(suite, args.memory, gpu_gb) and not args.force:
         print(
             f"{args.suite}: upstream needs about {dataset.min_gpu_gb} GB of GPU memory, "
             f"{gpu.name} has {gpu_gb:.1f} GB. Skipping (--force to try anyway).",
             file=sys.stderr,
         )
         return 0
-    run_args = memory_args(args.memory, gpu_gb) + args.extra
+    run_args = memory_args(suite, args.memory, gpu_gb) + args.extra
     if run_args:
         print(f"{gpu.name} ({gpu_gb:.1f} GB): every run gets {' '.join(run_args)}")
 
@@ -234,11 +264,15 @@ def main() -> int:
         "auc_2cm": float(np.sum(np.clip(2.0 - 100 * np.array(ates), 0.0, None))),
         "auc_8cm": float(np.sum(np.clip(8.0 - 100 * np.array(ates), 0.0, None))),
         "paper_mean_ate": reference.get(args.suite, {}).get("mean_ate"),
+        # The ETH3D-SLAM training-split AUC, comparable with auc_8cm.
+        "paper_auc_train": reference.get(args.suite, {}).get("auc_train"),
         "sequences": results,
     }
     (out.parent / f"{args.suite}.json").write_text(json.dumps(summary, indent=2) + "\n")
     mean, paper = summary["mean_ate"], summary["paper_mean_ate"]
     print(f"mean ATE {mean} m (paper: {paper}), {summary['failed']} failed")
+    if summary["paper_auc_train"]:
+        print(f"AUC (8 cm) {summary['auc_8cm']:.2f} (paper, train: {summary['paper_auc_train']})")
     print(f"Wrote {out.parent / (args.suite + '.json')}")
 
     if args.check:

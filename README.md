@@ -74,10 +74,11 @@ DROID_SAMPLE_DIR=$PWD/data bazelisk test --config=gpu //test/gpu:euroc_mh03_ate_
 Upstream says EuRoC and TUM-RGBD fit an 11 GB GPU, while TartanAir and
 ETH3D-SLAM need 24 GB. Below 11 GB, the runs use a sparser global bundle
 adjustment (`--backend_thresh=20 --backend_nms=3`, `--memory=low`; force either
-way with `--memory`). Its per-edge state is what overflows smaller GPUs. With it,
-EuRoC MH_03 on an RTX 3060 Laptop GPU (6 GB) reaches an ATE of 0.0220 m; the
-paper reports 0.022 m. The 24 GB suites are skipped on smaller GPUs unless
-`--force` is given. Arguments after the second `--` go to every run, and the
+way with `--memory`). Its per-edge state is what overflows smaller GPUs. EuRoC
+and ETH3D also get a smaller preallocated keyframe buffer (`--buffer=384`
+instead of 512 or 1024). With these settings EuRoC, TUM-RGBD and ETH3D run on
+an RTX 3060 Laptop GPU (6 GB); see `benchmark/RESULTS.md`. TartanAir doesn't fit
+in 6 GB and is skipped on smaller GPUs unless `--force` is given. Arguments after the second `--` go to every run, and the
 JSON records all extra arguments (`run_args`). `--check` allows 25% plus 1 cm
 over the paper per sequence.
 
